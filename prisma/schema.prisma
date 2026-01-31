@@ -1,0 +1,71 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model User {
+    id         String     @id @default(uuid())
+    name       String?
+    email      String     @unique
+    role       Role?
+    bookings   Booking[]
+    businesses Business[] @relation("UserBusinesses")
+}
+
+model Business {
+    id    String @id @default(uuid())
+    name  String
+    hours Json
+
+    // one owner per business
+    ownerId String
+    owner   User   @relation("UserBusinesses", fields: [ownerId], references: [id])
+
+    // business offers many services
+    services Service[]
+}
+
+model Service {
+    id       String @id @default(uuid())
+    name     String
+    duration Int
+    price    Float
+
+    // belongs to one business
+    businessId String
+    business   Business @relation(fields: [businessId], references: [id])
+
+    // has many bookings
+    bookings Booking[]
+}
+
+model Booking {
+    id        String        @id @default(uuid())
+    date      DateTime
+    status    BookingStatus @default(PENDING)
+    createdAt DateTime      @default(now())
+
+    // which customer made this booking
+    userId String?
+    user   User?   @relation(fields: [userId], references: [id])
+
+    // which service is being booked
+    serviceId String
+    service   Service @relation(fields: [serviceId], references: [id])
+}
+
+enum Role {
+    CUSTOMER
+    BUSINESS
+    ADMIN
+}
+
+enum BookingStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+}
