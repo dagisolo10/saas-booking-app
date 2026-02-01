@@ -42,3 +42,5 @@ next-env.d.ts
 .prettierrc
 
 /lib/generated/prisma
+
+/scripts

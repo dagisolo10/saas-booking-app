@@ -16,45 +16,39 @@ model User {
 }
 
 model Business {
-    id    String @id @default(uuid())
-    name  String
-    hours Json
-
-    // one owner per business
-    ownerId String
-    owner   User   @relation("UserBusinesses", fields: [ownerId], references: [id])
-
-    // business offers many services
+    id       String    @id @default(uuid())
+    name     String    @unique
+    hours    Json
+    ownerId  String
+    owner    User      @relation("UserBusinesses", fields: [ownerId], references: [id])
     services Service[]
+
+    @@unique([ownerId, name])
 }
 
 model Service {
-    id       String @id @default(uuid())
-    name     String
-    duration Int
-    price    Float
-
-    // belongs to one business
+    id         String    @id @default(uuid())
+    name       String    @unique
+    duration   Int
+    price      Float
     businessId String
-    business   Business @relation(fields: [businessId], references: [id])
+    business   Business  @relation(fields: [businessId], references: [id])
+    bookings   Booking[]
 
-    // has many bookings
-    bookings Booking[]
+    @@unique([businessId, name])
 }
 
 model Booking {
     id        String        @id @default(uuid())
     date      DateTime
     status    BookingStatus @default(PENDING)
+    userId    String?
+    user      User?         @relation(fields: [userId], references: [id])
+    serviceId String
+    service   Service       @relation(fields: [serviceId], references: [id])
     createdAt DateTime      @default(now())
 
-    // which customer made this booking
-    userId String?
-    user   User?   @relation(fields: [userId], references: [id])
-
-    // which service is being booked
-    serviceId String
-    service   Service @relation(fields: [serviceId], references: [id])
+    @@unique([serviceId, date])
 }
 
 enum Role {

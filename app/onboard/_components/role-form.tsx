@@ -1,10 +1,10 @@
 "use client";
 import React, { SyntheticEvent, useState } from "react";
-import { Button } from "./ui/button";
-import updateRole from "@/lib/actions/update-role";
+import { Button } from "../../../components/ui/button";
 import { useRouter } from "next/navigation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "./ui/label";
+import { Label } from "../../../components/ui/label";
+import updateRole from "../_actions/update-role";
 
 export default function RoleForm() {
     type UserRole = "CUSTOMER" | "ADMIN" | "BUSINESS";

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import RoleForm from "@/components/role-form";
+import RoleForm from "@/app/onboard/_components/role-form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { stackServerApp } from "@/stack/server";
 import prisma from "@/lib/config/prisma";
