@@ -12,6 +12,7 @@ export default async function deleteBusiness({ businessId }: { businessId: strin
         const business = await prisma.business.findUnique({
             where: {
                 id: businessId,
+                ownerId: user.id,
             },
         });
 
@@ -26,7 +27,7 @@ export default async function deleteBusiness({ businessId }: { businessId: strin
             },
         });
 
-        if (!booking) return { error: true, message: "Booking in this business not found" };
+        if (booking.count === 0) return { error: true, message: "Booking in this business not found" };
 
         // delete the services in that business
         const service = await prisma.service.deleteMany({
@@ -35,7 +36,7 @@ export default async function deleteBusiness({ businessId }: { businessId: strin
             },
         });
 
-        if (!service) return { error: true, message: "Booking in this business not found" };
+        if (service.count === 0) return { error: true, message: "Service in this business not found" };
 
         // then delete the business
         await prisma.business.delete({

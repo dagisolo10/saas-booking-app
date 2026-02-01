@@ -20,12 +20,13 @@ export default async function createService({ name, duration, price, businessId 
             where: {
                 businessId,
                 name,
+                business: {
+                    ownerId: user.id,
+                },
             },
         });
 
-        if (existingService) {
-            return { error: true, message: "Service with that name already exists" };
-        }
+        if (existingService) return { error: true, message: "Service with that name already exists" };
 
         const service = await prisma.service.create({
             data: {

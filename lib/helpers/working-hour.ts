@@ -8,8 +8,8 @@ export function isBusinessOpen(businessHour: BusinessHours, weekDay: Weekday, bo
     // check if business is open on that day
     if (businessHour[weekDay] === null) return false;
 
-    const openAt = businessHour[weekDay]?.open;
-    const closedAt = businessHour[weekDay]?.close;
+    const openAt = businessHour[weekDay].open;
+    const closedAt = businessHour[weekDay].close;
 
     const hour = new Date(bookingDate).getUTCHours().toString().padStart(2, "0");
     const minute = new Date(bookingDate).getUTCMinutes().toString().padStart(2, "0");

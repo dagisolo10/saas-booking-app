@@ -45,11 +45,10 @@ export default async function updateBooking({ date, bookingId }: BookingUpdate) 
 
         const conflicts = await prisma.booking.findFirst({
             where: {
-                userId: user.id,
-                id: {
-                    not: bookingId,
-                },
+                id: { not: bookingId },
                 date,
+                status: { not: "CANCELLED" },
+                serviceId: booking.serviceId,
             },
         });
 

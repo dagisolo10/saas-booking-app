@@ -9,7 +9,7 @@ export default async function deleteService({ serviceId }: { serviceId: string }
 
         if (!user) return { error: true, message: "Unauthorized" };
 
-        const service = await prisma.service.findUnique({
+        const service = await prisma.service.findFirst({
             where: {
                 id: serviceId,
                 business: {
