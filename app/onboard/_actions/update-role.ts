@@ -1,6 +1,6 @@
 "use server";
+import prisma from "@/lib/config/prisma";
 import { stackServerApp } from "@/stack/server";
-import prisma from "../config/prisma";
 
 type UserRole = "CUSTOMER" | "ADMIN" | "BUSINESS";
 
