@@ -11,6 +11,8 @@ export async function getMyBusinesses() {
 
         const user = session?.user;
 
+        if (!user) return { error: true, message: "Unauthorized" };
+
         return await prisma.business.findMany({
             where: {
                 ownerId: user?.id,
