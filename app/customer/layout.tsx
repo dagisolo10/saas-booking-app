@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import CustomersNavbar from "./_components/navbar";
 
 export const metadata: Metadata = {
     title: "Appointment Booking Saas App",
@@ -7,10 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function CustomerLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-    return (
-        <main>
-            <CustomersNavbar />
-            {children}
-        </main>
-    );
+    return <main>{children}</main>;
 }

@@ -13,36 +13,63 @@ model User {
     role       Role?
     bookings   Booking[]
     businesses Business[] @relation("UserBusinesses")
+    reviews    Review[]
 }
 
 model Business {
-    id       String    @id @default(uuid())
-    name     String    @unique
-    hours    Json
-    ownerId  String
-    owner    User      @relation("UserBusinesses", fields: [ownerId], references: [id])
-    services Service[]
+    id           String    @id @default(uuid())
+    name         String    @unique
+    hours        Json
+    description  String?
+    location     String?
+    phone        String?
+    bannerImages String[]
+    rating       Float?    @default(0)
+    reviewCount  Int?      @default(0)
+    ownerId      String
+    owner        User      @relation("UserBusinesses", fields: [ownerId], references: [id])
+    services     Service[]
 
     @@unique([ownerId, name])
 }
 
 model Service {
-    id         String    @id @default(uuid())
-    name       String    @unique
-    duration   Int
-    price      Float
-    businessId String
-    business   Business  @relation(fields: [businessId], references: [id])
-    bookings   Booking[]
+    id             String    @id @default(uuid())
+    name           String    @unique
+    duration       Int
+    price          Float
+    businessId     String
+    thumbnail      String?
+    category       String?   @default("other")
+    business       Business  @relation(fields: [businessId], references: [id])
+    bookings       Booking[]
+    rating         Float?    @default(0)
+    activeBookings Int       @default(0)
+    totalCompleted Int       @default(0)
+    totalReviews   Int       @default(0)
+    reviews        Review[]
 
     @@unique([businessId, name])
+}
+
+model Review {
+    id        String   @id @default(uuid())
+    rating    Int
+    comment   String?
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    serviceId String
+    service   Service  @relation(fields: [serviceId], references: [id])
+    createdAt DateTime @default(now())
+
+    @@unique([userId, serviceId])
 }
 
 model Booking {
     id        String        @id @default(uuid())
     date      DateTime
-    status    BookingStatus @default(PENDING)
     userId    String?
+    status    BookingStatus @default(PENDING)
     user      User?         @relation(fields: [userId], references: [id])
     serviceId String
     service   Service       @relation(fields: [serviceId], references: [id])
@@ -58,8 +85,8 @@ enum Role {
 }
 
 enum BookingStatus {
-    PENDING
     CONFIRMED
+    PENDING
     CANCELLED
     COMPLETED
 }

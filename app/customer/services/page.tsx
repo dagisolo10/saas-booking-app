@@ -1,5 +1,9 @@
-import React from 'react'
+import ServiceSearchGrid from "../_components/service-search-grid";
 
 export default function CustomerServices() {
-    return <div>Customer Services</div>;
+    return (
+        <main className="mx-auto max-w-7xl">
+            <ServiceSearchGrid />;
+        </main>
+    );
 }

@@ -1,5 +1,5 @@
-import { SignIn } from "@stackframe/stack";
+import SignInForm from "@/components/signin-form";
 
 export default function SignInPage() {
-    return <SignIn fullPage />;
+    return <SignInForm />;
 }

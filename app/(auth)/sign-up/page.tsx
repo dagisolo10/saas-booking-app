@@ -1,5 +1,5 @@
-import { SignUp } from '@stackframe/stack'
+import SignupForm from "@/components/signup-form";
 
 export default function SignUpPage() {
-  return <SignUp fullPage />
+    return <SignupForm />;
 }

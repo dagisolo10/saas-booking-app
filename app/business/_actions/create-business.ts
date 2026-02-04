@@ -1,17 +1,25 @@
 "use server";
-
 import prisma from "@/lib/config/prisma";
-import { stackServerApp } from "@/stack/server";
+import { createClient } from "@/lib/supabase/server";
 import { Prisma } from "@prisma/client";
 
 interface BusinessCreation {
     name: string;
+    phone?: string;
+    location?: string;
+    description?: string;
+    bannerImages: string[];
     hours: Prisma.InputJsonObject;
 }
 
-export default async function createBusiness({ name, hours }: BusinessCreation) {
+export default async function createBusiness({ name, phone, location, description, bannerImages, hours }: BusinessCreation) {
     try {
-        const user = await stackServerApp.getUser();
+        const supabase = createClient();
+        const {
+            data: { session },
+        } = await (await supabase).auth.getSession();
+
+        const user = session?.user;
 
         if (!user) return { error: true, message: "Unauthorized" };
 
@@ -22,15 +30,17 @@ export default async function createBusiness({ name, hours }: BusinessCreation) 
             },
         });
 
-        if (existingBusiness) {
-            return { error: true, message: "Business with this name already exists in your account." };
-        }
+        if (existingBusiness) return { error: true, message: "Business with this name already exists in your account." };
 
         const business = await prisma.business.create({
             data: {
                 ownerId: user.id,
                 name,
-                hours: hours,
+                hours,
+                phone,
+                location,
+                description,
+                bannerImages,
             },
             include: {
                 services: true,

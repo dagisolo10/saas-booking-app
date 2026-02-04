@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { StackProvider, StackTheme } from "@stackframe/stack";
-import { stackClientApp } from "../stack/client";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/components/auth-context";
+import Navbar from "@/components/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
+const manrope = Manrope({
     subsets: ["latin"],
+    variable: "--font-manrope",
 });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
+const playfair = Playfair_Display({
     subsets: ["latin"],
+    variable: "--font-playfair",
 });
 
 export const metadata: Metadata = {
@@ -22,12 +23,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html lang="en">
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <StackProvider app={stackClientApp}>
-                    <StackTheme>
-                        <main>{children}</main>
-                    </StackTheme>
-                </StackProvider>
+            <body className={`${manrope.variable} ${playfair.variable} antialiased`}>
+                <AuthProvider>
+                    <Navbar />
+                    <main>{children}</main>
+                    <Toaster position="top-center" />
+                </AuthProvider>
             </body>
         </html>
     );
