@@ -7,13 +7,14 @@ import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CreditCard, LogOut, Settings, User, UserPlus, LogIn, HelpCircle } from "lucide-react";
 import { checkUserExists } from "@/lib/config/auth";
-import { Role } from "@prisma/client";
+import { Role, User as UserType } from "@prisma/client";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
     const { user, signOut } = useAuth();
     const email = user?.email ?? "";
     const [role, setRole] = useState<Role | null>(null);
+    const [authUser, setAuthUser] = useState<UserType | null>(null);
 
     const pathname = usePathname();
     const hidden = ["/sign-in", "/sign-up", "/verify-email", "/onboard"];
@@ -44,6 +45,7 @@ export default function Navbar() {
                 try {
                     const dbUser = await checkUserExists(email);
                     setRole(dbUser?.role ?? null);
+                    setAuthUser(dbUser);
                 } catch (error) {
                     console.error("Failed to fetch role:", error);
                 }
@@ -75,7 +77,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <ProfileDropDown logout={logout} name={user?.user_metadata.name ?? ""} role={role} />
+                    <ProfileDropDown user={authUser} logout={logout} role={role} />
                 </div>
             </nav>
         </header>
@@ -83,20 +85,24 @@ export default function Navbar() {
 }
 
 interface DropDownProp {
-    name: string;
     logout: () => void;
+    user: UserType | null;
     role: Role | null;
 }
 
-export function ProfileDropDown({ name, logout, role }: DropDownProp) {
+export function ProfileDropDown({ logout, role, user }: DropDownProp) {
+    const displayName = user?.name || "Guest";
+    const initials = displayName.charAt(0).toUpperCase();
+    const firstName = displayName.split(" ")[0];
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" className={`relative flex items-center gap-2 overflow-hidden transition-all ${name ? "pr-4" : "size-8 rounded-full p-0"}`}>
-                    {name ? (
+                <Button variant="outline" className={`relative flex items-center gap-2 overflow-hidden transition-all ${user ? "pr-4" : "size-8 rounded-full p-0"}`}>
+                    {user ? (
                         <>
-                            <div className="flex size-6 items-center justify-center rounded-full bg-zinc-900 text-[10px] text-white">{name.charAt(0).toUpperCase()}</div>
-                            <span className="text-sm font-semibold">{name.split(" ")[0]}</span>
+                            <div className="flex size-6 items-center justify-center rounded-full bg-zinc-900 text-[10px] text-white">{initials}</div>
+                            <span className="text-sm font-semibold">{firstName}</span>
                         </>
                     ) : (
                         <User className="text-muted-foreground size-5" />
@@ -104,11 +110,11 @@ export function ProfileDropDown({ name, logout, role }: DropDownProp) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="mt-2 w-48">
-                {name ? (
+                {user ? (
                     <>
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
-                                <p className="text-sm leading-none font-medium">{name}</p>
+                                <p className="text-sm leading-none font-medium">{user?.name}</p>
                                 <p className="text-muted-foreground text-xs leading-none capitalize">{role?.toLowerCase() || "Guest"}</p>
                             </div>
                         </DropdownMenuLabel>
