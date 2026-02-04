@@ -1,11 +1,16 @@
 "use server";
 
 import prisma from "@/lib/config/prisma";
-import { stackServerApp } from "@/stack/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function deleteBusiness({ businessId }: { businessId: string }) {
     try {
-        const user = await stackServerApp.getUser();
+        const supabase = createClient();
+                const {
+                    data: { session },
+                } = await (await supabase).auth.getSession();
+        
+                const user = session?.user;
 
         if (!user) return { error: true, message: "Unauthorized" };
 
@@ -15,34 +20,27 @@ export default async function deleteBusiness({ businessId }: { businessId: strin
                 ownerId: user.id,
             },
         });
-
         if (!business) return { error: true, message: "Business not found or not owned by you" };
 
-        // delete bookings of the service in the business
-        const booking = await prisma.booking.deleteMany({
-            where: {
-                service: {
+        // then delete the all
+        await prisma.$transaction(async (trx) => {
+            await trx.booking.deleteMany({
+                where: {
+                    service: {
+                        businessId,
+                    },
+                },
+            });
+            await trx.service.deleteMany({
+                where: {
                     businessId,
                 },
-            },
-        });
-
-        if (booking.count === 0) return { error: true, message: "Booking in this business not found" };
-
-        // delete the services in that business
-        const service = await prisma.service.deleteMany({
-            where: {
-                businessId,
-            },
-        });
-
-        if (service.count === 0) return { error: true, message: "Service in this business not found" };
-
-        // then delete the business
-        await prisma.business.delete({
-            where: {
-                id: businessId,
-            },
+            });
+            await trx.business.delete({
+                where: {
+                    id: businessId,
+                },
+            });
         });
 
         return { success: true };

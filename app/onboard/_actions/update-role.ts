@@ -1,15 +1,21 @@
 "use server";
 import prisma from "@/lib/config/prisma";
-import { stackServerApp } from "@/stack/server";
+import { createClient } from "@/lib/supabase/server";
 
 type UserRole = "CUSTOMER" | "ADMIN" | "BUSINESS";
 
-export default async function updateRole({ role }: { role: UserRole }) {
-    const user = await stackServerApp.getUser();
+export default async function updateRole(role: UserRole) {
+    const supabase = createClient();
+    const {
+        data: { user },
+    } = await (await supabase).auth.getUser();
+
+    console.log(user);
+    console.log(role);
 
     if (!user) return;
 
-    return await prisma.user.update({
+    await prisma.user.update({
         where: {
             id: user.id,
         },

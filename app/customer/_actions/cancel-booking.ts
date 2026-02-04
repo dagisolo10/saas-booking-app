@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/config/prisma";
-import { stackServerApp } from "@/stack/server";
+import { createClient } from "@/lib/supabase/server";
 
 interface BookingManagement {
     bookingId: string;
@@ -9,7 +9,12 @@ interface BookingManagement {
 
 export default async function cancelBooking({ bookingId }: BookingManagement) {
     try {
-        const user = await stackServerApp.getUser();
+        const supabase = createClient();
+        const {
+            data: { session },
+        } = await (await supabase).auth.getSession();
+
+        const user = session?.user;
 
         if (!user) return { error: true, message: "Unauthorized" };
 
@@ -20,17 +25,38 @@ export default async function cancelBooking({ bookingId }: BookingManagement) {
             },
         });
 
-        if (!booking) {
-            return { error: true, message: "Booking not found" };
-        }
+        if (!booking) return { error: true, message: "Booking not found" };
+        if (booking.status === "CANCELLED") return { error: true, message: "Already cancelled" };
 
-        await prisma.booking.update({
+        const service = await prisma.service.findFirst({
             where: {
-                id: bookingId,
+                id: booking.serviceId,
             },
-            data: {
-                status: "CANCELLED",
-            },
+        });
+
+        if (!service) return { error: true, message: "Service not found" };
+
+        await prisma.$transaction(async (trx) => {
+            if (booking.status === "CONFIRMED" || booking.status === "PENDING") {
+                await trx.service.update({
+                    where: {
+                        id: booking.serviceId,
+                    },
+                    data: {
+                        activeBookings: {
+                            decrement: 1,
+                        },
+                    },
+                });
+            }
+            await trx.booking.update({
+                where: {
+                    id: bookingId,
+                },
+                data: {
+                    status: "CANCELLED",
+                },
+            });
         });
 
         return { success: true };

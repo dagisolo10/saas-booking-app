@@ -5,19 +5,28 @@ import { useRouter } from "next/navigation";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "../../../components/ui/label";
 import updateRole from "../_actions/update-role";
+import { toast } from "sonner";
+
+type UserRole = "CUSTOMER" | "ADMIN" | "BUSINESS";
 
 export default function RoleForm() {
-    type UserRole = "CUSTOMER" | "ADMIN" | "BUSINESS";
     const [role, setRole] = useState<UserRole>("CUSTOMER");
     const router = useRouter();
 
     async function handleRoleChoice(e: SyntheticEvent) {
         e.preventDefault();
-        await updateRole({ role });
 
-        if (role === "BUSINESS") router.push("/business");
-        else if (role === "CUSTOMER") router.push("/customer");
-        else router.push("/admin/dashboard");
+        toast.promise(updateRole(role), {
+            loading: "Loading...",
+            success: () => {
+                if (role === "BUSINESS") router.push("/business");
+                else if (role === "CUSTOMER") router.push("/customer");
+                else router.push("/admin/dashboard");
+
+                return "Welcome to Bookly!";
+            },
+            error: "Failed to choose role. Try again!"
+        });
     }
 
     return (

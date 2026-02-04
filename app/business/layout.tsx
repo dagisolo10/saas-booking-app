@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import BusinessNavbar from "./_components/navbar";
 
 export const metadata: Metadata = {
     title: "Appointment Booking Saas App",
@@ -9,7 +8,6 @@ export const metadata: Metadata = {
 export default function BusinessLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <main>
-            <BusinessNavbar />
             {children}
         </main>
     );

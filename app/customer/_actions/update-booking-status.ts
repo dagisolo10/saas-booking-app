@@ -2,18 +2,21 @@
 import prisma from "@/lib/config/prisma";
 import { getWeekday, hasEnoughTime, isBusinessOpen } from "@/lib/helpers/working-hour";
 import { BusinessHours } from "@/lib/types";
-import { stackServerApp } from "@/stack/server";
+import { createClient } from "@/lib/supabase/server";
 
 interface BookingUpdate {
     date: Date;
-    serviceId: string;
     bookingId: string;
-    businessId: string;
 }
 
 export default async function updateBooking({ date, bookingId }: BookingUpdate) {
     try {
-        const user = await stackServerApp.getUser();
+        const supabase = createClient();
+        const {
+            data: { session },
+        } = await (await supabase).auth.getSession();
+
+        const user = session?.user;
 
         if (!user) return { error: true, message: "Unauthorized" };
 
@@ -60,19 +63,11 @@ export default async function updateBooking({ date, bookingId }: BookingUpdate) 
 
         const isOpen = isBusinessOpen(hours, weekDay, bookingDate);
 
-        if (!isOpen)
-            return {
-                error: true,
-                message: "This business is closed during the selected time. Please pick another slot.",
-            };
+        if (!isOpen) return { error: true, message: "This business is closed during the selected time. Please pick another slot." };
 
         const enoughTime = hasEnoughTime(hours, weekDay, bookingDate, booking.service.duration);
 
-        if (!enoughTime)
-            return {
-                error: true,
-                message: "The selected time doesn’t leave enough time before closing. Please choose an earlier slot.",
-            };
+        if (!enoughTime) return { error: true, message: "The selected time doesn’t leave enough time before closing. Please choose an earlier slot." };
 
         const updatedBooking = await prisma.booking.update({
             where: {

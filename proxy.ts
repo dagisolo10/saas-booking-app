@@ -1,45 +1,106 @@
-import { NextRequest, NextResponse } from "next/server";
-import { stackServerApp } from "./stack/server";
-import prisma from "@/lib/config/prisma";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { hasEnvVars } from "./lib/utils";
+import prisma from "./lib/config/prisma";
 
-export default async function proxy(req: NextRequest) {
-    const path = req.nextUrl.pathname;
-    // ⛔ Don't run proxy logic on onboard route itself
-    if (path === "/onboard") return NextResponse.next();
+export async function updateSession(request: NextRequest) {
+    let supabaseResponse = NextResponse.next({ request });
 
-    const publicRoutes = ["/", "/about", "/support"];
-    const visitorRoutes = ["/", "/sign-in", "/sign-up"];
+    if (!hasEnvVars) return supabaseResponse;
+
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+        cookies: {
+            getAll() {
+                return request.cookies.getAll();
+            },
+            // Inside updateSession setAll
+            setAll(cookiesToSet) {
+                cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+                supabaseResponse = NextResponse.next({ request });
+                cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
+            },
+        },
+    });
+
+    // ***************************************************** //
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    const path = request.nextUrl.pathname;
+
+    const publicRoutes = ["/", "/about", "/support", "/auth/callback"];
+    const visitorRoutes = ["/", "/sign-in", "/sign-up", "/verify-email"];
+
     const isPublic = publicRoutes.includes(path);
     const isVisitor = visitorRoutes.includes(path);
     const isOnboard = path === "/onboard";
 
-    const user = await stackServerApp.getUser().catch(() => null);
-
-    if (!user && isPublic) return NextResponse.next();
-    if (!user && !isPublic) return NextResponse.redirect(new URL("/", req.url));
+    if (!user) {
+        if (isPublic || isVisitor) return NextResponse.next();
+        const url = request.nextUrl.clone();
+        url.pathname = "/sign-in";
+        return NextResponse.redirect(url);
+    }
 
     const dbUser = await prisma.user.findUnique({
-        where: { id: user!.id },
+        where: { id: user.id },
         select: { role: true },
     });
 
-    if (!dbUser && !isOnboard) return NextResponse.redirect(new URL("/onboard", req.url));
-    if (dbUser && !dbUser.role && !isOnboard) return NextResponse.redirect(new URL("/onboard", req.url));
+    if (!dbUser || !dbUser.role) {
+        if (isOnboard) return supabaseResponse;
+
+        const url = request.nextUrl.clone();
+        url.pathname = "/onboard";
+        return NextResponse.redirect(url);
+    }
 
     const role = dbUser?.role;
 
     if (isVisitor && role) {
         const redirectTo = role === "CUSTOMER" ? "/customer" : role === "BUSINESS" ? "/business" : "/admin/dashboard";
-        return NextResponse.redirect(new URL(redirectTo, req.url));
+
+        if (path !== redirectTo) {
+            const url = request.nextUrl.clone();
+            url.pathname = redirectTo;
+            return NextResponse.redirect(url);
+        }
+        return NextResponse.next({ request });
     }
 
     const isCustomer = path.startsWith("/customer");
     const isBusiness = path.startsWith("/business");
     const isAdmin = path.startsWith("/admin");
 
-    if (role === "CUSTOMER" && (isBusiness || isAdmin)) return NextResponse.redirect(new URL("/customer", req.url));
-    if (role === "BUSINESS" && (isCustomer || isAdmin)) return NextResponse.redirect(new URL("/business", req.url));
-    if (role === "ADMIN" && (isCustomer || isBusiness)) return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    if (role === "CUSTOMER" && (isBusiness || isAdmin)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/customer";
+        return NextResponse.redirect(url);
+    }
 
-    return NextResponse.next();
+    if (role === "BUSINESS" && (isCustomer || isAdmin)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/business";
+        return NextResponse.redirect(url);
+    }
+
+    if (role === "ADMIN" && (isCustomer || isBusiness)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/dashboard";
+        return NextResponse.redirect(url);
+    }
+
+    return supabaseResponse;
+}
+export const config = {
+    matcher: [
+        /* Exclude auth/callback and static files */
+        "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    ],
+};
+
+export async function proxy(request: NextRequest) {
+    return await updateSession(request);
 }
