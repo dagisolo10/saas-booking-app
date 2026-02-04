@@ -37,23 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(session?.user ?? null);
             setLoading(false);
 
-            // Optional: Refresh the page data if a user signs out
             if (event === "SIGNED_OUT") router.refresh();
         });
 
-        // 3. Cleanup the listener when the component unmounts
-        return () => {
-            subscription.unsubscribe();
-        };
+        return () => subscription.unsubscribe();
     }, [router, supabase.auth]);
 
-   async function signOut() {
-       await supabase.auth.signOut();
-       setUser(null); // Manually clear state for instant UI update
-       setSession(null);
-       router.push("/");
-       router.refresh(); // Clears any server-side data cached in the browser
-   }
+    async function signOut() {
+        await supabase.auth.signOut();
+        setUser(null); // Manually clear state for instant UI update
+        setSession(null);
+        router.push("/");
+        router.refresh(); // Clears any server-side data cached in the browser
+    }
 
     const value = { user, session, loading, signOut };
 
