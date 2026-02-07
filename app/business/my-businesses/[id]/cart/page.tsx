@@ -1,3 +1,6 @@
+export default function BussinessCartpage() {
+    return <div>BussinessCart</div>;
+}
 // import { getMyBusinessById } from "@/app/business/_actions/get-my-business";
 // import ServiceCategoryList from "@/app/business/_components/my-service-list";
 // import RatingStars from "@/components/rating-stars";
