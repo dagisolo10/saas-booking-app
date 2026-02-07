@@ -1,8 +1,10 @@
 import { getMyBusinesses } from "../_actions/get-my-business";
-import {  Plus, Store } from "lucide-react";
+import { Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import BusinessSearchGrid from "../_components/business-search";
+
+export const dynamic = "force-dynamic";
 
 export default async function MyBusinesses() {
     const businesses = await getMyBusinesses();
@@ -43,4 +45,3 @@ export default async function MyBusinesses() {
         </main>
     );
 }
-
