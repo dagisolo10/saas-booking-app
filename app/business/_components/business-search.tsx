@@ -10,7 +10,7 @@ import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/p
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from "next/image";
 import Link from "next/link";
-import { getTopBusinesses } from "../_actions/get-my-business";
+import { getMyTopBusinesses } from "../_actions/get-my-business";
 
 interface Business {
     id: string;
@@ -31,7 +31,7 @@ export default function BusinessSearchGrid({ allBusinesses }: { allBusinesses: B
     useEffect(() => {
         async function fetchTop() {
             try {
-                const top = await getTopBusinesses();
+                const top = await getMyTopBusinesses();
 
                 if (!("error" in top)) setTopBusinesses(top);
             } catch (error) {

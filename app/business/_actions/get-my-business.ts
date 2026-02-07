@@ -36,6 +36,8 @@ export async function getMyBusinessById(id: string) {
 
         const user = session?.user;
 
+        if (!user) return { error: true, message: "Unauthorized" };
+
         return await prisma.business.findFirst({
             where: {
                 id,
@@ -47,11 +49,11 @@ export async function getMyBusinessById(id: string) {
         });
     } catch (error) {
         console.log("Error in getMyBusinessById:", error);
+        return { error: true, message: "Something went wrong fetching my business" };
     }
-    return { error: true, message: "Something went wrong fetching my business" };
 }
 
-export async function getTopBusinesses() {
+export async function getMyTopBusinesses() {
     try {
         const supabase = createClient();
         const {

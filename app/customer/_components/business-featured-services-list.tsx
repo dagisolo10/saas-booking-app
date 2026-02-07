@@ -13,6 +13,8 @@ import { Service } from "@/lib/types";
 export default function FeaturedServiceList({ services }: { services: Service[] }) {
     const { toggleService, selectedServices, resetCart, replaceCart } = useCustomer();
 
+    const businessId = services[0]?.businessId;
+
     const [showConfirm, setShowConfirm] = useState<boolean>(false);
     const [forBooking, setForBooking] = useState<boolean>(false);
     const [newlySelected, setNewlySelected] = useState<Service | null>(null);
@@ -76,7 +78,7 @@ export default function FeaturedServiceList({ services }: { services: Service[] 
                     </div>
                 )}
             </div>
-            <Link onClick={(e) => handleSeeAll(e)} href={`/customer/businesses/${services[0].businessId}/cart`}>
+            <Link onClick={(e) => handleSeeAll(e)} href={`/customer/businesses/${businessId}/cart`}>
                 <Button className="mt-6 rounded-full bg-black hover:bg-zinc-800" variant={buttonVariant}>
                     {buttonLabel}
                 </Button>
@@ -90,7 +92,7 @@ export default function FeaturedServiceList({ services }: { services: Service[] 
                         replaceCart(newlySelected);
                         toast.success("Added to cart", { description: `${newlySelected.name} is now in your selection.` });
                     } else resetCart();
-                    router.push(`/customer/businesses/${services[0].businessId}/cart`);
+                    if (businessId) router.push(`/customer/businesses/${businessId}/cart`);
 
                     setShowConfirm(false);
                     setForBooking(false);
