@@ -27,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <AuthProvider>
                     <Navbar />
                     <main>{children}</main>
-                    <Toaster position="top-center" />
+                    <Toaster toastOptions={{ classNames: { description: "!text-current !opacity-100" } }} position="top-center" />
                 </AuthProvider>
             </body>
         </html>

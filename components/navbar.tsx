@@ -20,9 +20,10 @@ export default function Navbar() {
     const hidden = ["/sign-in", "/sign-up", "/verify-email", "/onboard"];
     const isHidden = hidden.includes(pathname);
 
-    // Routes Definitions
     const adminRoutes = [{ label: "Admin Console", path: "/admin/dashboard" }];
-    const businessRoutes = [{ label: "My Businesses", path: "/business/my-businesses" }];
+    const businessRoutes = [
+        { label: "My Businesses", path: "/business/my-businesses" }, // TODO
+    ];
     const customerRoutes = [
         { label: "Find Services", path: "/customer/services" },
         { label: "Browse Businesses", path: "/customer/businesses" },
@@ -65,7 +66,7 @@ export default function Navbar() {
                     Bookly.
                 </Link>
 
-                <div className="flex items-center gap-2 font-medium">
+                <div className="hidden items-center gap-2 font-medium sm:flex">
                     {activeRoutes.map((route) => {
                         const isActive = pathname === route.path;
                         return (

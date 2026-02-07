@@ -4,47 +4,142 @@ import { FieldGroup, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Globe, Plus } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, SetStateAction, SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import createBusiness from "../_actions/create-business";
+import { useRouter } from "next/navigation";
 
-interface Form {
-    name: HTMLInputElement | null;
-    opening: HTMLInputElement | null;
-    closing: HTMLInputElement | null;
-    description: HTMLTextAreaElement | null;
-    location: HTMLInputElement | null;
-    phone: HTMLInputElement | null;
-}
+type BusinessHours = {
+    open: string;
+    close: string;
+} | null;
+
+type WeeklySchedule = Record<string, BusinessHours>;
 
 export default function NewBusinessForm() {
-    const formRef = useRef<Form>({ name: null, opening: null, closing: null, description: null, location: null, phone: null });
     const [bannerFiles, setBannerFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const formRef = useRef<HTMLFormElement>(null);
+    const router = useRouter();
+    const [timeZone, setTimeZone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const [days, setDays] = useState<Record<string, boolean>>({ Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true });
 
     useEffect(() => {
-        // Cleanup URL objects when component unmounts or files change
         return () => previews.forEach((url) => URL.revokeObjectURL(url));
     }, [previews]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newlySelectedFiles = Array.from(e.target.files || []);
 
-        // 1. Update the actual File objects (append to existing)
         setBannerFiles((prev) => [...prev, ...newlySelectedFiles]);
 
-        // 2. Generate and update preview URLs
         const newPreviews = newlySelectedFiles.map((file) => URL.createObjectURL(file));
         setPreviews((prev) => [...prev, ...newPreviews]);
 
-        // 3. Reset the input value so the same file can be picked again if deleted
         e.target.value = "";
     };
 
+    const handleDiscard = () => {
+        if (formRef.current) resetForm(formRef.current);
+        toast.info("Form cleared");
+    };
+
+    const resetForm = (formElement: HTMLFormElement) => {
+        formElement.reset();
+
+        setBannerFiles([]);
+        setPreviews([]);
+        setDays({ Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true });
+        setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    };
+
+    async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
+        e.preventDefault();
+
+        if (loading) return;
+
+        const form = e.currentTarget;
+        setLoading(true);
+
+        const formData = new FormData(e.currentTarget);
+        const supabase = createClient();
+
+        const hours = Object.entries(days).reduce<WeeklySchedule>((acc, [day, status]) => {
+            const times = formData.getAll(day);
+            const [openingTime, closingTime] = times.map((t) => String(t));
+
+            acc[day] = status && openingTime && closingTime ? { open: openingTime, close: closingTime } : null;
+
+            return acc;
+        }, {});
+
+        const registerProcess = async () => {
+            const publicUrls: string[] = [];
+            const uploadedPaths: string[] = [];
+
+            try {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+
+                for (const file of bannerFiles) {
+                    const fileExt = file.name.split(".").pop();
+                    const fileName = `${file.name.split(".")[0]}-${Date.now()}.${fileExt}`;
+                    const filePath = `business/${fileName}`;
+
+                    const { error: uploadError } = await supabase.storage.from("banners").upload(filePath, file);
+
+                    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+                    uploadedPaths.push(filePath);
+
+                    const { data } = supabase.storage.from("banners").getPublicUrl(filePath);
+
+                    publicUrls.push(data.publicUrl);
+                }
+
+                const data = {
+                    hours,
+                    bannerImages: publicUrls,
+                    name: String(formData.get("name") || ""),
+                    phone: String(formData.get("phone") || ""),
+                    timeZone,
+                    location: String(formData.get("location") || ""),
+                    description: String(formData.get("description") || ""),
+                };
+
+                const result = await createBusiness(data);
+
+                if (result && "error" in result) throw new Error(result.message);
+
+                return result;
+            } catch (error) {
+                if (uploadedPaths.length > 0) await supabase.storage.from("banners").remove(uploadedPaths);
+
+                throw error;
+            }
+        };
+
+        await toast.promise(registerProcess(), {
+            loading: "Registering Business and uploading images...",
+            success: (data) => {
+                resetForm(form);
+
+                router.push(`/business/my-businesses/${data.id}`);
+                return `Successfully registered ${data.name}!`;
+            },
+            error: (err) => err.message || "Failed to register business.",
+            finally: () => setLoading(false),
+        });
+    }
+
     return (
-        <form className="space-y-10">
+        <form className="space-y-10" ref={formRef} onSubmit={handleSubmit}>
             <div className="space-y-6">
                 <div className="mb-4 flex items-center gap-2">
                     <div className="h-4 w-1 rounded-full bg-black" />
@@ -52,102 +147,46 @@ export default function NewBusinessForm() {
                 </div>
 
                 <FieldGroup className="gap-6">
-                    <Field className="gap-0">
+                    <Field className="gap-2">
                         <Label htmlFor="biz-name">Business Name</Label>
-                        <Input
-                            ref={(el) => {
-                                formRef.current.name = el as HTMLInputElement;
-                            }}
-                            required
-                            id="biz-name"
-                            placeholder="e.g. The Silver Scissors"
-                            className="h-12 rounded-xl"
-                        />
+                        <Input required id="biz-name" name="name" placeholder="e.g. The Silver Scissors" className="h-12 rounded-xl" />
                     </Field>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <Field className="gap-0">
+                        <Field className="gap-2">
                             <Label htmlFor="biz-location">Address / Location</Label>
-                            <Input
-                                ref={(el) => {
-                                    formRef.current.location = el as HTMLInputElement;
-                                }}
-                                required
-                                id="biz-location"
-                                placeholder="123 Business Ave, Suite 100"
-                                className="h-12 rounded-xl"
-                            />
+                            <Input required id="biz-location" name="location" placeholder="123 Business Ave, Suite 100" className="h-12 rounded-xl" />
                         </Field>
-                        <Field className="gap-0">
+                        <Field className="gap-2">
                             <Label htmlFor="biz-phone">Phone Number</Label>
-                            <Input
-                                ref={(el) => {
-                                    formRef.current.phone = el as HTMLInputElement;
-                                }}
-                                required
-                                id="biz-phone"
-                                type="tel"
-                                placeholder="+1 (555) 000-0000"
-                                className="h-12 rounded-xl"
-                            />
+                            <Input required id="biz-phone" name="phone" type="tel" placeholder="+1 (555) 000-0000" className="h-12 rounded-xl" />
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <Field className="gap-0">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-1">
+                        <Field className="gap-2">
                             <Label>Daily Operating Hours</Label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    ref={(el) => {
-                                        formRef.current.opening = el as HTMLInputElement;
-                                    }}
-                                    required
-                                    type="time"
-                                    className="h-12 rounded-xl px-3"
-                                    defaultValue="09:00"
-                                />
-                                <span className="text-sm font-medium text-zinc-400">to</span>
-                                <Input
-                                    ref={(el) => {
-                                        formRef.current.closing = el as HTMLInputElement;
-                                    }}
-                                    required
-                                    type="time"
-                                    className="h-12 rounded-xl px-3"
-                                    defaultValue="17:00"
-                                />
-                            </div>
-                        </Field>
-                        <Field className="gap-3">
-                            <Label>Closed Days</Label>
-                            <DaysDropdown />
+                            <HourSelection days={days} setDays={setDays} />
                         </Field>
                     </div>
                     <Field className="gap-0">
                         <Label className="mb-2">Business Timezone</Label>
-                        <TimezoneComboBox />
+                        <TimezoneComboBox timeZone={timeZone} setTimeZone={setTimeZone} />
                     </Field>
                 </FieldGroup>
             </div>
 
+            {/* Branding */}
             <div className="space-y-6">
                 <div className="mb-4 flex items-center gap-2">
                     <div className="h-4 w-1 rounded-full bg-black" />
                     <h3 className="text-sm font-bold tracking-widest text-zinc-900 uppercase">Branding</h3>
                 </div>
 
-                <FieldGroup className="gap-6">
+                <FieldGroup>
                     <Field>
-                        <Label htmlFor="biz-about">Short Description</Label>
-                        <Textarea
-                            id="biz-about"
-                            ref={(el) => {
-                                formRef.current.description = el as HTMLTextAreaElement;
-                            }}
-                            required
-                            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-25 w-full rounded-xl border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="Describe your business mission and vibe..."
-                        />
+                        <Label htmlFor="biz-description">Short Description</Label>
+                        <Textarea id="biz-description" name="description" required placeholder="Describe your business mission and vibe..." />
                     </Field>
 
                     <Field>
@@ -179,6 +218,7 @@ export default function NewBusinessForm() {
                                         <Plus className="size-5 text-zinc-600" />
                                     </div>
                                     <p className="text-sm font-semibold text-zinc-700">{bannerFiles.length > 0 ? `${bannerFiles.length} files selected` : "Upload Banner Images"}</p>
+                                    <p className="my-1 text-xs text-zinc-500">Use horizontal (landscape) images for the best look.</p>
                                     <p className="text-xs text-zinc-500">PNG, JPG up to 10MB</p>
                                 </div>
                                 <Input multiple type="file" id="biz-banner" accept="image/*" onChange={handleFileChange} className="absolute inset-0 cursor-pointer opacity-0" />
@@ -190,18 +230,23 @@ export default function NewBusinessForm() {
 
             {/* Footer Actions */}
             <div className="flex flex-col-reverse items-center justify-end gap-4 border-t pt-8 sm:flex-row">
-                <Button variant="outline" type="button" className="h-12 w-full rounded-full px-10 font-semibold sm:w-auto">
+                <Button disabled={loading} onClick={handleDiscard} variant="outline" type="button" className="h-12 w-full rounded-full px-12 font-semibold sm:w-auto">
                     Discard
                 </Button>
-                <Button type="submit" className="h-12 w-full rounded-full bg-black px-12 font-bold text-white shadow-2xl transition-all hover:bg-zinc-800 active:scale-95 sm:w-auto">
-                    Register Business
+                <Button disabled={loading} type="submit" className="h-12 w-full rounded-full bg-black px-12 font-bold text-white shadow-2xl transition-all hover:bg-zinc-800 active:scale-95 sm:w-auto">
+                    {loading ? "Registering…" : "Register Business"}
                 </Button>
             </div>
         </form>
     );
 }
 
-function TimezoneComboBox() {
+interface TimeZoneProp {
+    timeZone: string;
+    setTimeZone: Dispatch<SetStateAction<string>>;
+}
+
+function TimezoneComboBox({ timeZone, setTimeZone }: TimeZoneProp) {
     const timezones = useMemo(
         () =>
             Intl.supportedValuesOf("timeZone").map((tz) => ({
@@ -212,10 +257,10 @@ function TimezoneComboBox() {
     );
 
     return (
-        <Combobox items={timezones}>
+        <Combobox items={timezones} value={timeZone} onValueChange={(value) => value && setTimeZone(value as string)}>
             <div className="relative">
                 <Globe className="absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400" />
-                <ComboboxInput placeholder="Search timezone..." className="h-10 rounded-xl pl-10" />
+                <ComboboxInput value={timeZone.replace(/_/g, " ")} onChange={(e) => setTimeZone(e.target.value)} placeholder="Search timezone..." className="h-10 rounded-xl pl-10" />
             </div>
             <ComboboxContent>
                 <ComboboxEmpty>No timezone found.</ComboboxEmpty>
@@ -231,32 +276,55 @@ function TimezoneComboBox() {
     );
 }
 
-function DaysDropdown() {
-    const [days, setDays] = React.useState<Record<string, boolean>>({ Sunday: false, Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: false, Saturday: false });
+interface HourProp {
+    days: Record<string, boolean>;
+    setDays: Dispatch<SetStateAction<Record<string, boolean>>>;
+}
+
+function HourSelection({ days, setDays }: HourProp) {
+    const toggleDay = (day: string, value: string) => {
+        setDays((prev) => ({ ...prev, [day]: value === "open" }));
+    };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                {/* <Button variant="outline">Select Days</Button> */}
-                <Button variant="outline" className="justify-start rounded-xl font-normal">
-                    {Object.values(days).filter(Boolean).length > 0
-                        ? Object.entries(days)
-                              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                              .filter(([_, v]) => v)
-                              .map(([d]) => d.substring(0, 3))
-                              .join(", ")
-                        : "Select closed days"}
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                <DropdownMenuGroup>
-                    {Object.keys(days).map((day) => (
-                        <DropdownMenuCheckboxItem key={day} checked={days[day]} onCheckedChange={(checked) => setDays({ ...days, [day]: checked === true })}>
-                            {day}
-                        </DropdownMenuCheckboxItem>
-                    ))}
-                </DropdownMenuGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <Card className="px-4">
+            <div className="space-y-4">
+                {Object.keys(days).map((day) => (
+                    <div className="flex flex-col gap-1 border-b pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-0" key={day}>
+                        <p className="w-24 text-sm font-semibold">{day}</p>
+
+                        <div className="flex flex-col gap-1 sm:flex-1 sm:flex-row sm:items-center sm:justify-end">
+                            {!days[day] && (
+                                <div className="my-1 sm:flex-1 sm:text-center">
+                                    <h2 className="text-sm font-semibold">Closed all day</h2>
+                                </div>
+                            )}
+                            {days[day] && (
+                                <div className="flex items-center gap-2 transition-opacity duration-200">
+                                    <Input required={days[day]} type="time" name={day} className="h-7 rounded-xl text-sm" defaultValue="09:00" />
+                                    <span className="text-xs font-bold text-zinc-400 uppercase">to</span>
+                                    <Input required={days[day]} type="time" name={day} className="h-7 rounded-xl text-sm" defaultValue="17:00" />
+                                </div>
+                            )}
+
+                            <RadioGroup className="flex w-fit rounded-full bg-zinc-100 p-1" onValueChange={(val) => toggleDay(day, val)} value={days[day] ? "open" : "close"}>
+                                <div className="flex items-center">
+                                    <RadioGroupItem value="open" id={`${day}-open`} className="peer sr-only" />
+                                    <Label htmlFor={`${day}-open`} className="cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition-all peer-data-[state=checked]:bg-white peer-data-[state=checked]:shadow-sm">
+                                        Open
+                                    </Label>
+                                </div>
+                                <div className="flex items-center">
+                                    <RadioGroupItem value="close" id={`${day}-close`} className="peer sr-only" />
+                                    <Label htmlFor={`${day}-close`} className="cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition-all peer-data-[state=checked]:bg-white peer-data-[state=checked]:shadow-sm">
+                                        Closed
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Card>
     );
 }

@@ -20,6 +20,7 @@ model Business {
     id           String    @id @default(uuid())
     name         String    @unique
     hours        Json
+    timeZone     String?
     description  String?
     location     String?
     phone        String?

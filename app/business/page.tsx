@@ -3,43 +3,36 @@ import Link from "next/link";
 
 export default function BusinessLanding() {
     return (
-        <main className="bg-background text-foreground mx-auto min-h-screen">
+        <main className="bg-background text-foreground mx-auto min-h-screen pt-4">
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden py-12 text-center">
-                <div className="container mx-auto max-w-5xl px-4">
-                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-4 py-2 text-sm text-zinc-600 shadow-sm backdrop-blur">
-                        <Zap className="size-4 fill-blue-500 text-blue-500" />
-                        <span>Empowering 500+ local businesses this month</span>
-                    </div>
+            <section className="mx-auto max-w-5xl text-center">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-4 py-2 text-xs text-zinc-600 shadow-sm backdrop-blur sm:text-sm">
+                    <Zap className="size-4 fill-blue-500 text-blue-500" />
+                    <span>Empowering 500+ local businesses this month</span>
+                </div>
 
-                    <h1 className="mb-6 text-5xl leading-tight font-extrabold tracking-tight md:text-7xl">
-                        Grow your business on <span className="text-primary">autopilot.</span>
-                    </h1>
+                <h1 className="mb-6 text-5xl leading-tight font-extrabold tracking-tight md:text-7xl">
+                    Grow your business on <span className="text-primary">autopilot.</span>
+                </h1>
 
-                    <p className="text-muted-foreground mx-auto mb-10 max-w-2xl text-lg md:text-xl">The all-in-one platform to manage bookings, track revenue, and reach new customers. Stop chasing appointments and start building your brand.</p>
+                <p className="text-muted-foreground mx-auto mb-10 max-w-2xl text-lg">The all-in-one platform to manage bookings, track revenue, and reach new customers. Stop chasing appointments and start building your brand.</p>
 
-                    <div className="flex justify-center gap-4">
-                        <Link href="/business/my-businesses" className="bg-primary hover:bg-primary/90 rounded-full px-8 py-3 font-semibold text-white transition-colors">
-                            List Your Businesses
-                        </Link>
-                        <Link href="/business/demo" className="bg-secondary hover:bg-secondary/80 text-foreground rounded-full px-8 py-3 font-semibold transition-colors">
-                            View Demo
-                        </Link>
-                    </div>
+                <div className="flex justify-center gap-4">
+                    <Link href="/business/my-businesses" className="bg-primary hover:bg-primary/90 rounded-full px-8 py-3 font-semibold text-white transition-colors">
+                        List Your Businesses
+                    </Link>
                 </div>
             </section>
 
             {/* --- CORE FEATURES / HOW IT HELPS --- */}
-            <section className="bg-zinc-50/50 py-16">
-                <div className="container mx-auto max-w-6xl px-4 text-center">
-                    <h2 className="mb-4 text-3xl font-bold tracking-tight">Everything you need to scale</h2>
-                    <p className="text-muted-foreground mx-auto mb-12 max-w-2xl">Powerful tools designed specifically for service-based professionals.</p>
+            <section className="mx-auto max-w-6xl px-4 py-16 text-center">
+                <h2 className="mb-4 text-3xl font-bold tracking-tight">Everything you need to scale</h2>
+                <p className="text-muted-foreground mx-auto mb-12 max-w-2xl">Powerful tools designed specifically for service-based professionals.</p>
 
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                        <FeatureCard icon={<LayoutDashboard />} title="Smart Dashboard" text="Monitor your daily schedule, active bookings, and total completions at a single glance." />
-                        <FeatureCard icon={<BarChart3 />} title="Revenue Tracking" text="Detailed analytics on your most popular services and monthly earnings reports." />
-                        <FeatureCard icon={<Users />} title="Client Management" text="Maintain a digital database of your customers, their history, and verified reviews." />
-                    </div>
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <FeatureCard icon={<LayoutDashboard />} title="Smart Dashboard" text="Monitor your daily schedule, active bookings, and total completions at a single glance." />
+                    <FeatureCard icon={<BarChart3 />} title="Revenue Tracking" text="Detailed analytics on your most popular services and monthly earnings reports." />
+                    <FeatureCard icon={<Users />} title="Client Management" text="Maintain a digital database of your customers, their history, and verified reviews." />
                 </div>
             </section>
 
@@ -51,7 +44,7 @@ export default function BusinessLanding() {
                             <h2 className="text-4xl leading-tight font-bold">
                                 Your business is open <br /> 24/7—even when you are not.
                             </h2>
-                            <p className="text-muted-foreground text-lg">Let your customers book appointments while you sleep. Our automated system handles scheduling, cancellations, and notifications so you can focus on your craft.</p>
+                            <p className="text-muted-foreground">Let your customers book appointments while you sleep. Our automated system handles scheduling, cancellations, and notifications so you can focus on your craft.</p>
                             <ul className="space-y-4">
                                 <li className="flex items-center gap-3 font-medium">
                                     <ShieldCheck className="text-green-500" /> Secure payment processing
@@ -89,9 +82,9 @@ export default function BusinessLanding() {
 
 function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
     return (
-        <div className="bg-card border-border rounded-2xl border p-8 text-left shadow-sm transition-all hover:shadow-md">
+        <div className="bg-card rounded-2xl border p-8 text-left shadow-sm transition-all hover:shadow-md">
             <div className="bg-primary/10 text-primary mb-6 inline-flex size-14 items-center justify-center rounded-2xl">{icon}</div>
-            <h3 className="mb-3 text-xl font-bold">{title}</h3>
+            <h3 className="mb-2 text-xl font-bold">{title}</h3>
             <p className="text-muted-foreground leading-relaxed">{text}</p>
         </div>
     );
