@@ -1,5 +1,5 @@
 import { getBusinessById } from "@/app/customer/_actions/get-business";
-import ServiceListWithSelected from "@/app/customer/_components/business-services-list";
+import ServiceListWithSelected from "@/app/customer/_components/services-list";
 import { notFound } from "next/navigation";
 import { Service } from "@/lib/types";
 

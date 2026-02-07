@@ -7,7 +7,7 @@ import RatingStars from "@/components/rating-stars";
 import Link from "next/link";
 import getTimezoneOffset from "@/lib/helpers/timezone-converter";
 import { getBusinessById } from "../../_actions/get-business";
-import FeaturedServiceList from "../../_components/business-featured-services-list";
+import FeaturedServiceList from "../../_components/featured-services-list";
 import { Service } from "@/lib/types";
 
 type TimeRange = { open: string; close: string };
@@ -64,7 +64,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 </div>
             </div>
 
-            <div className="container mx-auto px-0 sm:px-4">
+            <div className="container px-0 sm:px-4">
                 {hasSecondaryImages && (
                     <div className={`mt-6 grid h-auto min-h-[20vh] gap-4 sm:h-[30vh] ${business.bannerImages.length === 2 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
                         {business.bannerImages.slice(1, 3).map((img, idx) => (

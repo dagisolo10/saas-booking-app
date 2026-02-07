@@ -1,7 +1,7 @@
 "use server";
-
 import prisma from "@/lib/config/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 interface ServiceUpdate {
     name?: string;
@@ -56,6 +56,7 @@ export default async function updateService({ name, duration, price, thumbnail, 
             data,
         });
 
+        revalidatePath(`/business/my-businesses/${updatedService.businessId}`);
         return updatedService;
     } catch (error) {
         console.log("Error in updateService:", error);

@@ -2,10 +2,10 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Phone, Clock, Layers, Info, Globe } from "lucide-react";
+import { MapPin, Phone, Clock, Info, Globe } from "lucide-react";
 import { getMyBusinessById } from "../../_actions/get-my-business";
 import RatingStars from "@/components/rating-stars";
-import MyServiceList from "../../_components/my-service-list";
+import MyServiceList from "../../_components/my-services-list";
 import Link from "next/link";
 import getTimezoneOffset from "@/lib/helpers/timezone-converter";
 
@@ -16,10 +16,11 @@ interface Service {
     category: string;
     price: number;
     rating: number;
+    businessId: string;
+    thumbnail: string;
 }
 
 type TimeRange = { open: string; close: string };
-
 type WeeklySchedule = Record<string, TimeRange | null>;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -41,10 +42,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
     if (!business || "error" in business) return notFound();
 
     const services = business.services as Service[];
+
     const hasSecondaryImages = business.bannerImages.length > 1;
 
     return (
-        <main className="mx-auto min-h-screen p-4 md:p-8">
+        <main className="min-h-screen p-6">
             {/* HERO SECTION */}
             <div className="relative min-h-[40vh] w-full overflow-hidden rounded-3xl bg-zinc-900">
                 <Image src={business.bannerImages[0] || "/unsplash.jpg"} alt={business.name} fill className="object-cover object-center brightness-50" priority />
@@ -72,7 +74,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 </div>
             </div>
 
-            <div className="container mx-auto px-0 sm:px-4">
+            <div className="container px-0 sm:px-4">
                 {hasSecondaryImages && (
                     <div className={`mt-6 grid h-auto min-h-[20vh] gap-4 sm:h-[30vh] ${business.bannerImages.length === 2 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
                         {business.bannerImages.slice(1, 3).map((img, idx) => (
@@ -87,24 +89,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 <div className="py-8 md:py-12">
                     <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-12">
                         {/* LEFT: Services Grid */}
-                        <div className="order-2 lg:order-1 lg:col-span-2">
-                            <div className="mb-6 flex items-center gap-3 md:mb-8">
-                                <Layers className="text-primary" />
-                                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Available Services</h2>
-                            </div>
-
-                            {services.length > 0 ? (
-                                <MyServiceList services={services} />
-                            ) : (
-                                <div className="rounded-3xl border-2 border-dashed p-12 text-center">
-                                    <p className="text-muted-foreground">No services listed yet.</p>
-                                </div>
-                            )}
-                        </div>
+                        <MyServiceList services={services} />
 
                         {/* RIGHT: Sidebar Info */}
-                        <aside className="top-8 order-1 lg:order-2">
-                            <div className="space-y-6 lg:sticky lg:top-8">
+                        <aside className="top-20 order-1 sm:sticky lg:order-2">
+                            <div className="space-y-6">
                                 <BusinessHours timezone={business.timeZone ?? ""} hours={business.hours as WeeklySchedule} />
                                 <Description description={business.description ?? "No Description"} />
                             </div>
