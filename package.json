@@ -1,5 +1,5 @@
 {
-    "name": "template-5",
+    "name": "saas-booking",
     "version": "0.1.0",
     "private": true,
     "scripts": {
@@ -33,6 +33,7 @@
         "embla-carousel-react": "^8.6.0",
         "framer-motion": "^12.30.1",
         "lucide-react": "^0.563.0",
+        "maplibre-gl": "^5.17.0",
         "mongoose": "^9.1.5",
         "motion": "^12.31.0",
         "next": "16.1.6",

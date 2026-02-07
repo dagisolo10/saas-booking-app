@@ -1,19 +1,7 @@
 import { getBusinessById } from "@/app/customer/_actions/get-business";
-import ServiceList from "@/app/customer/_components/service-list";
-import RatingStars from "@/components/rating-stars";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import Image from "next/image";
+import ServiceListWithSelected from "@/app/customer/_components/business-services-list";
 import { notFound } from "next/navigation";
-
-interface Service {
-    id: string;
-    name: string;
-    duration: number;
-    category: string;
-    price: number;
-    rating: number;
-}
+import { Service } from "@/lib/types";
 
 export default async function BusinessServiceCart({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -22,47 +10,9 @@ export default async function BusinessServiceCart({ params }: { params: Promise<
 
     const business = await getBusinessById(id);
 
-    if (!business) return notFound();
+    if (!business || "error" in business) return notFound();
 
     const services = business.services as Service[];
 
-    return (
-        <main className="mx-auto min-h-screen px-8">
-            <div className="relative container py-4">
-                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-                    {/* LEFT SIDE: Client Component handles scrollspy/carousel */}
-                    <ServiceList services={services} />
-
-                    {/* RIGHT: Sidebar Info */}
-                    <div className="sticky top-8">
-                        <Card className="border-none">
-                            <CardHeader className="grid grid-cols-3">
-                                <Image src={business.bannerImages[0]} alt={business.name} width={1080} height={300} className="col-span-1 h-full rounded-md object-cover object-top brightness-50" priority />
-                                <div className="col-span-2 text-left">
-                                    <CardTitle className="text-xl font-bold">{business.name}</CardTitle>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold">{business.rating?.toFixed(1)}</span>
-                                        <RatingStars rating={business.rating ?? 0} />
-                                        <span className="font-medium">({business.reviewCount} Reviews)</span>
-                                    </div>
-                                    <CardContent className="px-0">{business.location}</CardContent>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <CardDescription className="mb-4">No services selected</CardDescription>
-                                <div className="flex items-center justify-between border-t py-4">
-                                    <CardTitle>Total</CardTitle>
-                                    <CardTitle>Free</CardTitle>
-                                </div>
-                                <CardContent className="min-h-48 space-y-4 overflow-y-auto p-0">{/* Selected services */}</CardContent>
-                            </CardContent>
-                            <CardFooter className="mt-auto">
-                                <Button className="w-full rounded-full bg-black py-3">Continue</Button>
-                            </CardFooter>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-        </main>
-    );
+    return <ServiceListWithSelected services={services} business={business} />;
 }

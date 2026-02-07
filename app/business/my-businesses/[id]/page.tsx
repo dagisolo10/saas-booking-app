@@ -2,11 +2,12 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Phone, Clock } from "lucide-react";
-import { InputJsonObject } from "@prisma/client/runtime/client";
+import { MapPin, Phone, Clock, Layers, Info, Globe } from "lucide-react";
 import { getMyBusinessById } from "../../_actions/get-my-business";
 import RatingStars from "@/components/rating-stars";
 import MyServiceList from "../../_components/my-service-list";
+import Link from "next/link";
+import getTimezoneOffset from "@/lib/helpers/timezone-converter";
 
 interface Service {
     id: string;
@@ -17,9 +18,18 @@ interface Service {
     rating: number;
 }
 
-type BusinessHourProp = {
-    hours: Record<string, InputJsonObject>;
-};
+type TimeRange = { open: string; close: string };
+
+type WeeklySchedule = Record<string, TimeRange | null>;
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const business = await getMyBusinessById(id);
+
+    if (!business || "error" in business) return notFound();
+
+    return { title: `${business?.name || "Business"} | Bookly`, description: business?.description || "Check out this business on our platform." };
+}
 
 export default async function BusinessPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -28,58 +38,77 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
 
     const business = await getMyBusinessById(id);
 
-    if (!business) return notFound();
+    if (!business || "error" in business) return notFound();
 
     const services = business.services as Service[];
+    const hasSecondaryImages = business.bannerImages.length > 1;
 
     return (
-        <main className="mx-auto min-h-screen px-8 pt-8">
+        <main className="mx-auto min-h-screen p-4 md:p-8">
             {/* HERO SECTION */}
-            <div className="relative h-[40vh] w-full">
-                <Image src={business.bannerImages[0] || "/placeholder-biz.jpg"} alt={business.name} fill className="object-cover object-top brightness-50" priority />
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-white md:p-16">
-                    <div className="container">
-                        <h1 className="text-4xl font-bold md:text-6xl">{business.name}</h1>
-                        <div className="mt-4 flex flex-wrap items-center gap-8 text-sm md:text-base">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold">{business.rating?.toFixed(1)}</span>
+            <div className="relative min-h-[40vh] w-full overflow-hidden rounded-3xl bg-zinc-900">
+                <Image src={business.bannerImages[0] || "/unsplash.jpg"} alt={business.name} fill className="object-cover object-center brightness-50" priority />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
+
+                <div className="absolute inset-0 flex items-center justify-center p-6 text-zinc-50 md:p-16">
+                    <div className="container mx-auto">
+                        <Badge className="mb-2 border-none bg-white/20 backdrop-blur-md hover:bg-white/30">Official Storefront</Badge>
+                        <h1 className="text-3xl font-bold sm:text-4xl md:text-6xl">{business.name}</h1>
+
+                        <div className="mt-4 flex flex-col flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-6">
+                            <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-md sm:px-4">
+                                <span className="text-base font-bold text-yellow-400 sm:text-lg">{business.rating?.toFixed(1)}</span>
                                 <RatingStars rating={business.rating ?? 0} />
-                                <span className="font-medium">({business.reviewCount} Reviews)</span>
+                                <span className="hidden text-sm opacity-70 sm:inline">({business.reviewCount} Reviews)</span>
                             </div>
-                            <span className="flex items-center gap-2">
+                            <span className="flex items-center gap-2 text-sm font-medium sm:text-base">
                                 <MapPin size={18} /> {business.location}
                             </span>
-                            <span className="flex items-center gap-2">
+                            <Link className="flex items-center gap-2 text-sm font-medium sm:text-base" href={`tel:${business.phone}`}>
                                 <Phone size={18} /> {business.phone}
-                            </span>
+                            </Link>
                         </div>
-                        <h2 className="text-muted mt-4 text-xl font-medium">{business.description}</h2>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-4 grid h-[40vh] grid-cols-1 gap-4 md:grid-cols-2">
-                {business.bannerImages[1] && (
-                    <div className="relative overflow-hidden">
-                        <Image src={business.bannerImages[1]} fill alt={business.name} className="rounded-md object-cover object-center brightness-50 transition-all duration-300 hover:scale-100 md:scale-105" priority />
+            <div className="container mx-auto px-0 sm:px-4">
+                {hasSecondaryImages && (
+                    <div className={`mt-6 grid h-auto min-h-[20vh] gap-4 sm:h-[30vh] ${business.bannerImages.length === 2 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
+                        {business.bannerImages.slice(1, 3).map((img, idx) => (
+                            <div key={idx} className="group relative min-h-50 overflow-hidden rounded-2xl sm:min-h-full">
+                                <Image src={img} fill alt="Business interior" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-transparent" />
+                            </div>
+                        ))}
                     </div>
                 )}
-                {business.bannerImages[2] && (
-                    <div className="relative overflow-hidden">
-                        <Image src={business.bannerImages[2]} fill alt={business.name} className="rounded-md object-cover object-center brightness-50 transition-all duration-300 hover:scale-100 md:scale-105" priority />
-                    </div>
-                )}
-            </div>
 
-            <div className="relative container py-12">
-                <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-3">
-                    {/* LEFT: Services Grid */}
-                    <MyServiceList services={services} />
+                <div className="py-8 md:py-12">
+                    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-12">
+                        {/* LEFT: Services Grid */}
+                        <div className="order-2 lg:order-1 lg:col-span-2">
+                            <div className="mb-6 flex items-center gap-3 md:mb-8">
+                                <Layers className="text-primary" />
+                                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Available Services</h2>
+                            </div>
 
-                    {/* RIGHT: Sidebar Info */}
-                    <div className="sticky top-4 space-y-6">
-                        <BusinessHours hours={business.hours as BusinessHourProp} />
-                        <Description description={business.description ?? "No Description"} />
+                            {services.length > 0 ? (
+                                <MyServiceList services={services} />
+                            ) : (
+                                <div className="rounded-3xl border-2 border-dashed p-12 text-center">
+                                    <p className="text-muted-foreground">No services listed yet.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* RIGHT: Sidebar Info */}
+                        <aside className="top-8 order-1 lg:order-2">
+                            <div className="space-y-6 lg:sticky lg:top-8">
+                                <BusinessHours timezone={business.timeZone ?? ""} hours={business.hours as WeeklySchedule} />
+                                <Description description={business.description ?? "No Description"} />
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </div>
@@ -87,22 +116,67 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
     );
 }
 
-function BusinessHours({ hours }: { hours: BusinessHourProp }) {
-    const businessHours = Object.entries(hours);
+function BusinessHours({ hours, timezone }: { hours: WeeklySchedule; timezone: string }) {
+    const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const sortedHours = Object.entries(hours || {}).sort(([a], [b]) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+
+    const now = new Date();
+    const currentDay = dayOrder[now.getDay()];
+    const offset = getTimezoneOffset(timezone);
+
+    const currentTime = now.toLocaleTimeString(undefined, { timeZone: timezone, hour12: false, hour: "2-digit", minute: "2-digit" });
+    const todayHours = hours[currentDay];
+    const isOpen = todayHours && currentTime >= todayHours.open && currentTime <= todayHours.close;
 
     return (
-        <Card className="border-none">
+        <Card className="border-none shadow-sm">
             <CardContent className="space-y-4 p-6">
-                <h3 className="flex items-center gap-2 text-xl font-bold">
-                    <Clock size={20} /> Business Hours
-                </h3>
-                <div className="space-y-2 text-sm">
-                    {businessHours.map(([day, time]) => (
-                        <div key={day} className="flex justify-between border-b pb-1 capitalize">
-                            <span className="text-muted-foreground">{day}</span>
-                            <span className="font-medium">{time ? `${time.open} - ${time.close}` : <Badge variant="secondary">Closed</Badge>}</span>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="flex items-center gap-2 text-xl font-bold">
+                        <Clock size={20} /> Business Hours
+                    </h3>
+                    {isOpen ? (
+                        <div className="flex animate-pulse items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                            <span className="size-1.5 rounded-full bg-emerald-600" />
+                            OPEN NOW
                         </div>
-                    ))}
+                    ) : (
+                        <div className="flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-400">
+                            <span className="size-1.5 rounded-full bg-red-600" />
+                            CLOSED
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-2 text-sm">
+                    {sortedHours.map(([day, time]) => {
+                        const isToday = day === currentDay;
+
+                        return (
+                            <div key={day} className={`flex justify-between border-b pb-1.5 capitalize last:border-b-0 ${isToday ? "font-bold text-zinc-950" : "font-medium text-zinc-600"}`}>
+                                <span>
+                                    {day} {isToday && " (Today)"}
+                                </span>
+                                <span className="text-right">
+                                    {time ? (
+                                        `${time.open} - ${time.close}`
+                                    ) : (
+                                        <Badge variant="secondary" className="font-normal">
+                                            Closed
+                                        </Badge>
+                                    )}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                    <div className="flex items-center gap-1">
+                        <Globe size={12} />
+                        <span className="max-w-37.5 truncate">{timezone.replace(/_/g, " ")}</span>
+                    </div>
+                    <span>{offset}</span>
                 </div>
             </CardContent>
         </Card>
@@ -111,10 +185,12 @@ function BusinessHours({ hours }: { hours: BusinessHourProp }) {
 
 function Description({ description }: { description: string }) {
     return (
-        <Card className="bg-muted/50 border-none shadow-md">
+        <Card className="border-none shadow-sm">
             <CardContent className="p-6">
-                <h3 className="mb-2 font-bold">About Us</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+                <h3 className="mb-2 flex items-center gap-2 text-lg font-bold text-zinc-400">
+                    <Info size={18} /> Our Story
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{description || "This business hasn't shared their story yet, but they're ready to serve you!"}</p>
             </CardContent>
         </Card>
     );

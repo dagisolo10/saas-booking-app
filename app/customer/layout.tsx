@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { CustomerContextProvider } from "./_components/customer-context";
 
 export const metadata: Metadata = {
     title: "Appointment Booking Saas App",
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function CustomerLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-    return <main>{children}</main>;
+    return (
+        <CustomerContextProvider>
+            <main>{children}</main>
+        </CustomerContextProvider>
+    );
 }

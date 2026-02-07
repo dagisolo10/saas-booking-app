@@ -8,11 +8,12 @@ interface BusinessCreation {
     phone?: string;
     location?: string;
     description?: string;
+    timeZone?: string;
     bannerImages: string[];
     hours: Prisma.InputJsonObject;
 }
 
-export default async function createBusiness({ name, phone, location, description, bannerImages, hours }: BusinessCreation) {
+export default async function createBusiness({ name, phone, location, description, timeZone, bannerImages, hours }: BusinessCreation) {
     try {
         const supabase = createClient();
         const {
@@ -39,11 +40,9 @@ export default async function createBusiness({ name, phone, location, descriptio
                 hours,
                 phone,
                 location,
+                timeZone,
                 description,
                 bannerImages,
-            },
-            include: {
-                services: true,
             },
         });
 

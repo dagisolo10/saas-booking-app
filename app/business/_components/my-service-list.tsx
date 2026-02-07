@@ -87,20 +87,13 @@ export default function MyServiceList({ services }: { services: Service[] }) {
                                             <div className="flex-1">
                                                 <h3 className="font-semibold">{service.name}</h3>
                                                 <p className="text-muted-foreground text-xs">{service.duration} min</p>
-                                                <p className="mt-2 text-sm font-semibold">${service.price}</p>
+                                                <p className="mt-1 text-sm font-semibold">${service.price}</p>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <Button
                                                     onClick={() => {
                                                         setIsEditing(true);
-                                                        setSelectedService({
-                                                            name: service.name,
-                                                            duration: service.duration,
-                                                            price: service.price,
-                                                            category: service.category,
-                                                            serviceId: service.id,
-                                                            thumbnail: "",
-                                                        });
+                                                        setSelectedService({ name: service.name, duration: service.duration, price: service.price, category: service.category, serviceId: service.id, thumbnail: "" });
                                                     }}
                                                     variant="secondary"
                                                     size="icon"

@@ -14,7 +14,7 @@ export default function CreateBusiness() {
                     </Link>
 
                     <div className="space-y-6">
-                        <div className="w-fit rounded-2xl bg-white/10 p-3 backdrop-blur-md">
+                        <div className="w-fit rounded-2xl bg-white/10 p-3">
                             <Store className="size-8 text-white" />
                         </div>
                         <h1 className="text-5xl leading-tight font-extrabold tracking-tighter">
@@ -34,7 +34,7 @@ export default function CreateBusiness() {
                             <p className="text-xs text-zinc-500">A dedicated page for your business.</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="items-c enter flex gap-4">
                         <div className="flex size-10 items-center justify-center rounded-full bg-white/5">
                             <CheckCircle2 className="size-5 text-green-400" />
                         </div>

@@ -9,6 +9,7 @@ interface BusinessUpdate {
     phone: string;
     location: string;
     businessId: string;
+    timeZone: string;
     description: string;
     bannerImages: string[];
     hours: Prisma.InputJsonObject;
@@ -18,12 +19,13 @@ interface PartialData {
     name: string;
     phone: string;
     location: string;
+    timeZone: string;
     description: string;
     bannerImages: string[];
     hours: Prisma.InputJsonObject;
 }
 
-export default async function updateBusiness({ name, phone, location, description, bannerImages, hours, businessId }: BusinessUpdate) {
+export default async function updateBusiness({ name, phone, location, description, timeZone, bannerImages, hours, businessId }: BusinessUpdate) {
     try {
         const supabase = createClient();
         const {
@@ -51,6 +53,7 @@ export default async function updateBusiness({ name, phone, location, descriptio
         if (hours !== undefined) data.hours = hours;
         if (phone !== undefined) data.phone = phone;
         if (location !== undefined) data.location = location;
+        if (timeZone !== undefined) data.timeZone = timeZone;
         if (description !== undefined) data.description = description;
         if (bannerImages.length !== 0) data.bannerImages = updatedImages;
 
