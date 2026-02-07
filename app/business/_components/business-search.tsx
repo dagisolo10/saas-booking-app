@@ -41,6 +41,11 @@ export default function BusinessSearchGrid({ allBusinesses }: { allBusinesses: B
         fetchTop();
     }, []);
 
+    const handleSearchChange = (val: string) => {
+        setQuery(val);
+        setCurrentPage(1);
+    };
+
     // Search Logic: If searching, filter all. If empty, show top or all.
     const displayBusinesses = query.trim().length > 0 ? allBusinesses.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()) || b.location?.toLowerCase().includes(query.toLowerCase())) : allBusinesses;
 
@@ -48,17 +53,12 @@ export default function BusinessSearchGrid({ allBusinesses }: { allBusinesses: B
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedBusinesses = displayBusinesses.slice(startIndex, startIndex + itemsPerPage);
 
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCurrentPage(1);
-    }, [query]);
-
     return (
         <div className="space-y-8">
             {/* Search Bar Section */}
             <Card className="mx-auto my-12 max-w-2xl rounded-full border-zinc-200 py-1 shadow-lg ring-1 ring-black/5">
                 <CardContent className="flex items-center justify-between gap-2 px-4 py-2">
-                    <SearchInput query={query} setQuery={setQuery} placeholder="Search by name or location..." />
+                    <SearchInput query={query} setQuery={handleSearchChange} placeholder="Search by name or location..." />
                     <Separator />
                     <TopBusinessesDropdown businesses={topBusinesses} />
                 </CardContent>
@@ -158,7 +158,7 @@ function PaginationContainer({ currentPage, totalPages, onPageChange, itemsPerPa
     );
 }
 
-function SearchInput({ placeholder, query, setQuery }: { placeholder: string; query: string; setQuery: Dispatch<SetStateAction<string>> }) {
+function SearchInput({ placeholder, query, setQuery }: { placeholder: string; query: string; setQuery: (val: string) => void }) {
     return (
         <div className="flex flex-1 items-center gap-3 px-2">
             <Search className="size-5 text-zinc-400" />
