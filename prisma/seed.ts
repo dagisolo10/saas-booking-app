@@ -157,8 +157,8 @@ import prisma from "@/lib/config/prisma";
 //     });
 
 async function main() {
-    const bizId1 = "4b0154ad-38a0-4ff6-bdab-da6883413893";
-    const bizId2 = "f6236095-7bed-40be-b604-ad66c3de05b6";
+    const bizId1 = "c7ea4350-1762-447e-928b-4c68ba6cd5e2";
+    const bizId2 = "40b2e3d8-d53b-4d7d-b0eb-ecc2df89d0c1";
 
     console.log("🌱 Seeding 10 services for each business...");
 

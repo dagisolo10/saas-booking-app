@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/config/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 interface ServiceCreation {
     name: string;
@@ -46,6 +47,7 @@ export default async function createService({ name, duration, price, businessId,
             },
         });
 
+        revalidatePath(`/business/my-businesses/${service.businessId}`);
         return service;
     } catch (error) {
         console.log("Error in createService:", error);

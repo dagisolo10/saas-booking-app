@@ -1,5 +1,5 @@
 "use client";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,28 +10,28 @@ import { Pagination, PaginationContent, PaginationItem, PaginationNext, Paginati
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from "next/image";
 import Link from "next/link";
-import { getTopBusinesses } from "../_actions/get-business";
-import { Business } from "@prisma/client";
 
-export default function CustomerBusinessSearchGrid({ allBusinesses }: { allBusinesses: Business[] }) {
-    const [topBusinesses, setTopBusinesses] = useState<Business[]>([]);
+interface Business {
+    id: string;
+    name: string;
+    location: string | null;
+    rating: number | null;
+    bannerImages: string[];
+    description: string | null;
+}
+
+interface BusinessGridProps {
+    allBusinesses: Business[];
+    topBusinesses: Business[];
+    linkPath: string;
+    placeholder: string;
+}
+
+export default function BusinessSearch({ allBusinesses, topBusinesses, linkPath, placeholder }: BusinessGridProps) {
     const [query, setQuery] = useState<string>("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState<number>(8);
-
-    useEffect(() => {
-        async function fetchTop() {
-            try {
-                const top = await getTopBusinesses();
-
-                if (!("error" in top)) setTopBusinesses(top);
-            } catch (error) {
-                console.error("Failed to fetch top businesses:", error);
-            }
-        }
-        fetchTop();
-    }, []);
 
     const handleSearchChange = (val: string) => {
         setQuery(val);
@@ -49,21 +49,21 @@ export default function CustomerBusinessSearchGrid({ allBusinesses }: { allBusin
             {/* Search Bar Section */}
             <Card className="top-20 z-50 mx-auto my-8 max-w-2xl rounded-full border-zinc-200 py-1 shadow-lg ring-1 ring-black/5 sm:sticky">
                 <CardContent className="flex items-center justify-between gap-2 px-4 py-2">
-                    <SearchInput query={query} setQuery={handleSearchChange} />
+                    <SearchInput query={query} setQuery={handleSearchChange} placeholder={placeholder} />
                     <Separator />
-                    <TopBusinessesDropdown businesses={topBusinesses} />
+                    <TopBusinessesDropdown businesses={topBusinesses} linkPath={linkPath} />
                 </CardContent>
             </Card>
 
             {/* Grid Section */}
             {paginatedBusinesses.length > 0 ? (
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {paginatedBusinesses.map((business) => (
-                        <Link href={`/customer/businesses/${business.id}`} key={business.id} className="group">
+                    {paginatedBusinesses.map((business, index) => (
+                        <Link href={`${linkPath}/${business.id}`} key={business.id} className="group">
                             <Card className="h-full gap-0 border-none bg-transparent shadow-none transition-all">
                                 <CardHeader className="relative aspect-16/10 overflow-hidden rounded-lg bg-zinc-100 p-0">
-                                    <Image className="object-cover transition-all duration-500 group-hover:scale-105" src={business.bannerImages[0] ?? "/unsplash.jpg"} alt={business.name} fill />
-                                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-zinc-800 backdrop-blur-sm">
+                                    <Image priority={index < 4} className="object-cover transition-all duration-500 group-hover:scale-105" src={business.bannerImages[0] ?? "/unsplash.jpg"} alt={business.name} fill />
+                                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold backdrop-blur-sm">
                                         <Star className="size-3 fill-yellow-400 text-yellow-400" />
                                         {(business.rating ?? 0).toFixed(1)}
                                     </div>
@@ -127,7 +127,6 @@ function PaginationContainer({ currentPage, totalPages, onPageChange, itemsPerPa
             <Pagination className="mx-0 w-auto">
                 <PaginationContent>
                     <PaginationItem>
-                        {/* onClick={() => onPageChange(currentPage - 1)} */}
                         <Button variant="ghost" size="sm" disabled={currentPage === 1}>
                             <PaginationPrevious />
                         </Button>
@@ -138,7 +137,6 @@ function PaginationContainer({ currentPage, totalPages, onPageChange, itemsPerPa
                     </div>
 
                     <PaginationItem>
-                        {/* onClick={() => onPageChange(currentPage + 1)} */}
                         <Button variant="ghost" size="sm" disabled={currentPage === totalPages}>
                             <PaginationNext />
                         </Button>
@@ -149,11 +147,11 @@ function PaginationContainer({ currentPage, totalPages, onPageChange, itemsPerPa
     );
 }
 
-function SearchInput({ query, setQuery }: { query: string; setQuery: (val: string) => void }) {
+function SearchInput({ query, setQuery, placeholder }: { query: string; setQuery: (val: string) => void; placeholder: string }) {
     return (
         <div className="flex flex-1 items-center gap-3 px-2">
             <Search className="size-5 text-zinc-400" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} className="border-none shadow-none" placeholder="Search by name or location..." />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} className="border-none shadow-none" placeholder={placeholder} />
         </div>
     );
 }
@@ -162,7 +160,7 @@ function Separator() {
     return <div className="hidden h-6 border-l border-zinc-200 md:block" />;
 }
 
-function TopBusinessesDropdown({ businesses }: { businesses: Business[] }) {
+function TopBusinessesDropdown({ businesses, linkPath }: { businesses: Business[]; linkPath: string }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -174,9 +172,9 @@ function TopBusinessesDropdown({ businesses }: { businesses: Business[] }) {
                 <DropdownMenuLabel className="px-3 pt-2 text-xs font-bold tracking-widest text-zinc-400 uppercase">Recommended Places</DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-2" />
                 {businesses.map((business) => (
-                    <Link key={business.id} href={`/customer/businesses/${business.id}`}>
+                    <Link key={business.id} href={`${linkPath}/${business.id}`}>
                         <DropdownMenuItem className="flex cursor-pointer items-center gap-3 rounded-xl p-2 focus:bg-zinc-50">
-                            <div className="relative size-10 overflow-hidden rounded-md bg-zinc-100">
+                            <div className="relative size-10 overflow-hidden rounded-lg bg-zinc-100">
                                 <Image src={business.bannerImages[0] ?? "/unsplash.jpg"} alt="" fill className="object-cover" />
                             </div>
                             <div className="flex flex-col">

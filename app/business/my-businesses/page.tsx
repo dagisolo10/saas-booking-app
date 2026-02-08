@@ -1,18 +1,26 @@
-import { getMyBusinesses } from "../_actions/get-my-business";
+import { getMyBusinesses, getMyTopBusinesses } from "../_actions/get-my-business";
 import { Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import BusinessSearchGrid from "../_components/business-search";
+import BusinessSearch from "@/components/business-search";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyBusinesses() {
     const businesses = await getMyBusinesses();
+    const topBusinesses = await getMyTopBusinesses();
 
     if ("error" in businesses)
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <p className="text-destructive">Error: {businesses.message}</p>
+            </div>
+        );
+
+    if ("error" in topBusinesses)
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <p className="text-destructive">Error: {topBusinesses.message}</p>
             </div>
         );
 
@@ -39,7 +47,7 @@ export default async function MyBusinesses() {
                 </div>
             ) : (
                 <div className="mt-6">
-                    <BusinessSearchGrid allBusinesses={businesses} />
+                    <BusinessSearch allBusinesses={businesses} topBusinesses={topBusinesses} linkPath="/business/my-businesses" placeholder="Search your businesses by name or city..." />
                 </div>
             )}
         </main>
