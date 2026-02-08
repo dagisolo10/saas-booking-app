@@ -166,7 +166,7 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
         };
 
         await toast.promise(process(), {
-            loading: mode === "add" ? "Adding..." : "Updating...",
+            loading: mode === "add" ? "Adding Service..." : "Updating Service...",
             success: `${mode === "add" ? "Service Added Successfully!" : "Service Updated Successfully!"}`,
             error: (err) => err.message || `Failed to ${mode === "add" ? "add" : "update"} service.`,
             finally: () => setIsLoading(false),
