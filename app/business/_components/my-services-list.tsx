@@ -26,17 +26,20 @@ interface SelectedService {
     thumbnail: string;
 }
 
-export default function MyServiceList({ services }: { services: Service[] }) {
+export default function MyServiceList({ services, businessId }: { services: Service[]; businessId?: string }) {
     const [activeCategory, setActiveCategory] = useState("Featured");
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [selectedService, setSelectedService] = useState<SelectedService>();
+    const resolvedBusinessId = businessId ?? services[0]?.businessId;
 
     const featuredServices = useMemo(() => [...services].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 5), [services]);
 
     const dbCategories = useMemo(() => Array.from(new Set(services.map((s) => s.category))), [services]);
     const allTabs = useMemo(() => ["Featured", ...dbCategories], [dbCategories]);
     const isClickScrolling = useRef(false);
+
+    const toCategoryId = (label: string, index: number) => `cat-${index}-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -48,8 +51,8 @@ export default function MyServiceList({ services }: { services: Service[] }) {
             { threshold: 0.2, rootMargin: "-120px 0px -50% 0px" },
         );
 
-        allTabs.forEach((tab) => {
-            const el = document.getElementById(tab);
+        allTabs.forEach((tab, idx) => {
+            const el = document.getElementById(toCategoryId(tab, idx));
             if (el) observer.observe(el);
         });
 
@@ -60,7 +63,9 @@ export default function MyServiceList({ services }: { services: Service[] }) {
         isClickScrolling.current = true;
         setActiveCategory(cat);
 
-        const el = document.getElementById(cat);
+        const idx = allTabs.indexOf(cat);
+        const el = idx >= 0 ? document.getElementById(toCategoryId(cat, idx)) : null;
+
         if (el) {
             const offset = 140;
             const elementPosition = el.getBoundingClientRect().top + window.scrollY;
@@ -83,17 +88,16 @@ export default function MyServiceList({ services }: { services: Service[] }) {
             </div>
 
             {services.length > 0 ? (
-                // <MyServiceList services={services} />
                 <div className="col-span-2 space-y-4">
                     <CategoryCarousel allTabs={allTabs} activeCategory={activeCategory} scrollToCategory={scrollToCategory} />
                     <div className="space-y-8">
-                        {allTabs.map((tab) => {
+                        {allTabs.map((tab, idx) => {
                             const displayServices = tab === "Featured" ? featuredServices : services.filter((s) => s.category === tab);
 
                             if (displayServices.length === 0) return null;
 
                             return (
-                                <section key={tab} id={tab}>
+                                <section key={tab} id={toCategoryId(tab, idx)}>
                                     <h2 className="mb-4 text-xl font-extrabold tracking-tight">{tab}</h2>
                                     <div className="grid gap-4">
                                         {displayServices.map((service) => (
@@ -128,13 +132,13 @@ export default function MyServiceList({ services }: { services: Service[] }) {
                         })}
                     </div>
                     {isEditing && <ServiceDialog mode="edit" dialog={isEditing} setDialog={setIsEditing} data={selectedService} />}
-                    {isAdding && <ServiceDialog businessId={services[0].businessId} dialog={isAdding} setDialog={setIsAdding} />}
                 </div>
             ) : (
                 <div className="rounded-3xl border-2 border-dashed p-12 text-center">
                     <p className="text-muted-foreground">No services listed yet.</p>
                 </div>
             )}
+            {isAdding && resolvedBusinessId && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
         </div>
     );
 }

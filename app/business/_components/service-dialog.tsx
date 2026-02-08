@@ -50,10 +50,8 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | null>(null);
 
-    // Inside ServiceDialog component
     const supabase = createClient();
 
-    // Force the existing thumbnail to update whenever the 'data' prop or 'dialog' state changes
     useEffect(() => {
         if (dialog && mode === "edit" && data?.thumbnail) {
             if (data.thumbnail.startsWith("http")) {
@@ -65,12 +63,11 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
                 setExistingThumbnailUrl(publicUrl);
             }
         } else if (!dialog) {
-            // Clear everything when dialog closes
             setExistingThumbnailUrl(null);
             setPreview(null);
             setSelectedFile(null);
         }
-    }, [data, mode, dialog, supabase.storage]); // Notice 'dialog' is a dependency now
+    }, [data, mode, dialog, supabase.storage]);
 
     useEffect(() => {
         return () => {
@@ -115,12 +112,8 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
                     const filePath = `service/${fileName}`;
 
                     const { error: uploadError } = await supabase.storage.from("banners").upload(filePath, selectedFile);
-                    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
-                    if (selectedFile && data?.thumbnail) {
-                        // Delete the old file since we have a new one
-                        await supabase.storage.from("banners").remove([data.thumbnail]);
-                    }
+                    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
                     uploaded = filePath;
                 }
@@ -140,8 +133,11 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
 
                     if (result && "error" in result) throw new Error(result.message);
 
+                    if (selectedFile && data?.thumbnail) await supabase.storage.from("banners").remove([data.thumbnail]);
+
                     clearImage();
                     setDialog(false);
+
                     return result;
                 } else {
                     const serviceToBeAdded: ServiceCreation = {
@@ -152,12 +148,14 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
                         thumbnail: uploaded,
                         businessId: businessId ?? "",
                     };
+
                     const result = await createService(serviceToBeAdded);
 
                     if (result && "error" in result) throw new Error(result.message);
 
                     clearImage();
                     setDialog(false);
+
                     return result;
                 }
             } catch (error) {
@@ -221,9 +219,11 @@ export function ServiceDialog({ dialog, setDialog, mode = "add", data, businessI
                             {(preview || existingThumbnailUrl) && (
                                 <div className="relative aspect-video h-24 overflow-hidden rounded-xl border">
                                     <Image src={preview || existingThumbnailUrl || ""} alt="Preview" fill className="object-contain" />
-                                    <Button type="button" onClick={clearImage} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-black">
-                                        <Plus className="size-3 rotate-45" />
-                                    </Button>
+                                    {preview && (
+                                        <Button type="button" onClick={clearImage} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-black">
+                                            <Plus className="size-3 rotate-45" />
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </Field>
