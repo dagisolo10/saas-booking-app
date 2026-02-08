@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -9,6 +9,7 @@ import { Layers, Plus } from "lucide-react";
 import deleteService from "../my-businesses/[id]/_actions/delete-service";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 interface Service {
     id: string;
@@ -34,6 +35,8 @@ export default function MyServiceList({ services, businessId }: { services: Serv
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const [showConfirm, setShowConfirm] = useState<boolean>(false);
 
     const [selectedService, setSelectedService] = useState<SelectedService>();
     const resolvedBusinessId = businessId ?? services[0]?.businessId;
@@ -148,11 +151,19 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                                                         >
                                                             Edit
                                                         </Button>
-                                                        <Button disabled={isDeleting} onClick={() => handleDelete(service)} variant="ghost" className="cursor-pointer rounded-full text-xs transition-all">
+                                                        <Button disabled={isDeleting} onClick={() => setShowConfirm(true)} variant="ghost" className="cursor-pointer rounded-full text-xs transition-all">
                                                             Delete
                                                         </Button>
                                                     </div>
                                                 </CardContent>
+                                                <DeleteConfirmation
+                                                    showConfirm={showConfirm}
+                                                    onConfirm={() => {
+                                                        handleDelete(service);
+                                                        setShowConfirm(false);
+                                                    }}
+                                                    setShowConfirm={setShowConfirm}
+                                                />
                                             </Card>
                                         ))}
                                     </div>
@@ -198,5 +209,30 @@ function CategoryCarousel({ allTabs, activeCategory, scrollToCategory }: Carouse
                 </Carousel>
             </div>
         </div>
+    );
+}
+
+interface DeleteConfirmationProps {
+    showConfirm: boolean;
+    setShowConfirm: Dispatch<SetStateAction<boolean>>;
+    onConfirm: () => void;
+}
+
+function DeleteConfirmation({ showConfirm, onConfirm, setShowConfirm }: DeleteConfirmationProps) {
+    return (
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+            <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Service?</AlertDialogTitle>
+                    <AlertDialogDescription>Are you sure you want to delete this service? This action cannot be undone and it will be removed from your business immediately.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onConfirm} variant={`destructive`}>
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
