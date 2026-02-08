@@ -6,6 +6,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { motion } from "framer-motion";
 import { ServiceDialog } from "./service-dialog";
 import { Layers, Plus } from "lucide-react";
+import deleteService from "../my-businesses/[id]/_actions/delete-service";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
 interface Service {
     id: string;
@@ -30,6 +33,8 @@ export default function MyServiceList({ services, businessId }: { services: Serv
     const [activeCategory, setActiveCategory] = useState("Featured");
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const [selectedService, setSelectedService] = useState<SelectedService>();
     const resolvedBusinessId = businessId ?? services[0]?.businessId;
 
@@ -39,7 +44,31 @@ export default function MyServiceList({ services, businessId }: { services: Serv
     const allTabs = useMemo(() => ["Featured", ...dbCategories], [dbCategories]);
     const isClickScrolling = useRef(false);
 
-    const toCategoryId = (label: string, index: number) => `cat-${index}-${label.toLowerCase().replace(/\s+/g, "-")}`;
+    const supabase = createClient();
+
+    async function handleDelete(service: Service) {
+        setIsDeleting(true);
+
+        const processDelete = async () => {
+            const result = await deleteService(service.id);
+
+            if (result && "error" in result) throw new Error(result.message);
+
+            if (service.thumbnail) {
+                const { error: storageError } = await supabase.storage.from("banners").remove([service.thumbnail]);
+
+                if (storageError) throw new Error("Storage deletion failed:", storageError);
+            }
+            return result;
+        };
+
+        await toast.promise(processDelete(), {
+            loading: "Deleting Service...",
+            success: "Service Deleted Successfully!",
+            error: (err) => err.message || "Failed to delete service.",
+            finally: () => setIsDeleting(false),
+        });
+    }
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -51,8 +80,8 @@ export default function MyServiceList({ services, businessId }: { services: Serv
             { threshold: 0.2, rootMargin: "-120px 0px -50% 0px" },
         );
 
-        allTabs.forEach((tab, idx) => {
-            const el = document.getElementById(toCategoryId(tab, idx));
+        allTabs.forEach((tab) => {
+            const el = document.getElementById(tab);
             if (el) observer.observe(el);
         });
 
@@ -63,9 +92,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
         isClickScrolling.current = true;
         setActiveCategory(cat);
 
-        const idx = allTabs.indexOf(cat);
-        const el = idx >= 0 ? document.getElementById(toCategoryId(cat, idx)) : null;
-
+        const el = document.getElementById(cat);
         if (el) {
             const offset = 140;
             const elementPosition = el.getBoundingClientRect().top + window.scrollY;
@@ -91,13 +118,13 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                 <div className="col-span-2 space-y-4">
                     <CategoryCarousel allTabs={allTabs} activeCategory={activeCategory} scrollToCategory={scrollToCategory} />
                     <div className="space-y-8">
-                        {allTabs.map((tab, idx) => {
+                        {allTabs.map((tab) => {
                             const displayServices = tab === "Featured" ? featuredServices : services.filter((s) => s.category === tab);
 
                             if (displayServices.length === 0) return null;
 
                             return (
-                                <section key={tab} id={toCategoryId(tab, idx)}>
+                                <section key={tab} id={tab}>
                                     <h2 className="mb-4 text-xl font-extrabold tracking-tight">{tab}</h2>
                                     <div className="grid gap-4">
                                         {displayServices.map((service) => (
@@ -119,7 +146,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                                                         >
                                                             Edit
                                                         </Button>
-                                                        <Button variant="ghost" className="cursor-pointer rounded-full text-xs transition-all">
+                                                        <Button disabled={isDeleting} onClick={() => handleDelete(service)} variant="ghost" className="cursor-pointer rounded-full text-xs transition-all">
                                                             Delete
                                                         </Button>
                                                     </div>
@@ -138,7 +165,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                     <p className="text-muted-foreground">No services listed yet.</p>
                 </div>
             )}
-            {isAdding && resolvedBusinessId && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
+            {isAdding && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
         </div>
     );
 }

@@ -2,8 +2,9 @@
 
 import prisma from "@/lib/config/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
-export default async function deleteService({ serviceId }: { serviceId: string }) {
+export default async function deleteService(serviceId: string) {
     try {
         const supabase = createClient();
         const {
@@ -47,6 +48,8 @@ export default async function deleteService({ serviceId }: { serviceId: string }
                 },
             });
         });
+
+        revalidatePath(`/business/my-businesses/${service.businessId}`)
 
         return { success: true };
     } catch (error) {
