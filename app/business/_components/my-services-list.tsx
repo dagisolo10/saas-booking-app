@@ -56,8 +56,10 @@ export default function MyServiceList({ services, businessId }: { services: Serv
 
             if (service.thumbnail) {
                 const { error: storageError } = await supabase.storage.from("banners").remove([service.thumbnail]);
-
-                if (storageError) throw new Error("Storage deletion failed:", storageError);
+                if (storageError) {
+                    const message = storageError.message ?? "Storage deletion failed";
+                    throw new Error(message);
+                }
             }
             return result;
         };
@@ -165,7 +167,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                     <p className="text-muted-foreground">No services listed yet.</p>
                 </div>
             )}
-            {isAdding && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
+            {isAdding && resolvedBusinessId && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
         </div>
     );
 }

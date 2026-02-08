@@ -89,7 +89,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 <div className="py-8 md:py-12">
                     <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-12">
                         {/* LEFT: Services Grid */}
-                        <MyServiceList services={services} businessId={business.id} />
+                        <MyServiceList services={services} businessId={business.id ?? ""} />
 
                         {/* RIGHT: Sidebar Info */}
                         <aside className="top-20 order-1 sm:sticky lg:order-2">
