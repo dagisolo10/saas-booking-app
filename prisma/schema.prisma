@@ -17,18 +17,19 @@ model User {
 }
 
 model Business {
-    id           String    @id @default(uuid())
-    name         String    @unique
+    id           String         @id @default(uuid())
+    name         String         @unique
     hours        Json
     timeZone     String?
     description  String?
     location     String?
     phone        String?
     bannerImages String[]
-    rating       Float?    @default(0)
-    reviewCount  Int?      @default(0)
+    rating       Float?         @default(0)
+    reviewCount  Int?           @default(0)
+    status       BusinessStatus @default(ACTIVE)
     ownerId      String
-    owner        User      @relation("UserBusinesses", fields: [ownerId], references: [id])
+    owner        User           @relation("UserBusinesses", fields: [ownerId], references: [id])
     services     Service[]
 
     @@unique([ownerId, name])
@@ -90,4 +91,10 @@ enum BookingStatus {
     PENDING
     CANCELLED
     COMPLETED
+}
+
+enum BusinessStatus {
+    ACTIVE
+    PAUSED
+    CLOSED
 }

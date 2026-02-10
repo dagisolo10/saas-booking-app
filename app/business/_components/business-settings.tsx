@@ -108,11 +108,10 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
         }, {});
 
         const processUpdate = async () => {
-            const finalBannerImages = [...existingImages];
             const uploadedPaths: string[] = [];
 
             try {
-                for (const file of bannerFiles) {
+                const uploadPromises = bannerFiles.map(async (file) => {
                     const fileName = `business/${file.name}-${Date.now()}`;
                     const { error } = await supabase.storage.from("banners").upload(fileName, file);
 
@@ -120,8 +119,11 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
                     uploadedPaths.push(fileName);
 
                     const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
-                    finalBannerImages.push(data.publicUrl);
-                }
+                    return data.publicUrl;
+                });
+
+                const newImageUrls = await Promise.all(uploadPromises);
+                const finalBannerImages = [...existingImages, ...newImageUrls];
 
                 const data = {
                     name: String(formData.get("name") || ""),
