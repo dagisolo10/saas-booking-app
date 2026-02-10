@@ -31,6 +31,25 @@ export default async function closeBusiness({ businessId }: { businessId: string
 
         if (activeBookings) return { error: true, message: "Can not close business with active bookings. Please complete or cancel them first." };
 
+        const services = await prisma.service.findMany({
+            where: { businessId },
+            select: { thumbnail: true },
+        });
+
+        const thumbnailPaths = services
+            .filter((s) => s.thumbnail)
+            .map((s) => {
+                try {
+                    const decodedUrl = decodeURIComponent(s.thumbnail!);
+                    const parts = decodedUrl.split("/thumbnails/");
+                    const path = parts[parts.length - 1];
+                    return path.startsWith("/") ? path.substring(1) : path;
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean) as string[];
+
         await prisma.$transaction([
             prisma.booking.updateMany({
                 where: {
@@ -48,22 +67,8 @@ export default async function closeBusiness({ businessId }: { businessId: string
             }),
         ]);
 
-        if (business.bannerImages.length > 0) {
-            const paths = business.bannerImages
-                .map((url) => {
-                    try {
-                        const decodedUrl = decodeURIComponent(url);
-                        const parts = decodedUrl.split("/banners/");
-                        const path = parts[parts.length - 1];
-
-                        return path.startsWith("/") ? path.substring(1) : path;
-                    } catch {
-                        return null;
-                    }
-                })
-                .filter(Boolean) as string[];
-
-            const { error: storageError } = await supabase.storage.from("banners").remove(paths);
+        if (thumbnailPaths.length > 0) {
+            const { error: storageError } = await supabase.storage.from("banners").remove(thumbnailPaths);
 
             if (storageError) return { error: true, message: storageError.message };
         }

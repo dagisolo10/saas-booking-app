@@ -20,37 +20,39 @@ export default async function toggleBusiness({ businessId }: { businessId: strin
 
         if (!business) return { error: true, message: "Business not found or not owned by you" };
 
+        if (business.status === "CLOSED") return { error: true, message: "Closed businesses cannot be toggled." };
+
         const newStatus = business.status === "PAUSED" ? "ACTIVE" : "PAUSED";
 
         if (newStatus === "PAUSED") {
             const activeBookings = await prisma.booking.findFirst({
                 where: {
-                    service: {
-                        businessId,
-                    },
+                    service: { businessId },
                     status: "CONFIRMED",
                 },
             });
 
-            if (activeBookings) return { error: true, message: "Can not pause business with active bookings" };
+            if (activeBookings) return { error: true, message: "Cannot pause business with active bookings" };
 
-            await prisma.booking.updateMany({
-                where: {
-                    service: { businessId },
-                    status: "PENDING",
-                },
-                data: { status: "CANCELLED" },
+            await prisma.$transaction([
+                prisma.booking.updateMany({
+                    where: {
+                        service: { businessId },
+                        status: "PENDING",
+                    },
+                    data: { status: "CANCELLED" },
+                }),
+                prisma.business.update({
+                    where: { id: businessId },
+                    data: { status: newStatus },
+                }),
+            ]);
+        } else {
+            await prisma.business.update({
+                where: { id: businessId },
+                data: { status: newStatus },
             });
         }
-
-        await prisma.business.update({
-            where: {
-                id: businessId,
-            },
-            data: {
-                status: newStatus,
-            },
-        });
 
         revalidatePath("/business/my-businesses");
 

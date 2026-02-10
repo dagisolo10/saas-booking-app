@@ -54,13 +54,6 @@ export default async function updateService({ name, duration, price, thumbnail, 
         if (thumbnail !== undefined) data.thumbnail = thumbnail;
         if (category !== undefined) data.category = category;
 
-        const updatedService = await prisma.service.update({
-            where: {
-                id: serviceId,
-            },
-            data,
-        });
-
         if (thumbnail !== undefined && thumbnail !== service.thumbnail && service.thumbnail) {
             try {
                 const decodedUrl = decodeURIComponent(service.thumbnail);
@@ -69,11 +62,18 @@ export default async function updateService({ name, duration, price, thumbnail, 
 
                 const cleanPath = path.startsWith("/") ? path.substring(1) : path;
 
-                await supabase.storage.from("services").remove([cleanPath]);
+                await supabase.storage.from("banners").remove([cleanPath]);
             } catch (e) {
                 return { error: true, message: `Failed to delete service thumbnail:${e}` };
             }
         }
+
+        const updatedService = await prisma.service.update({
+            where: {
+                id: serviceId,
+            },
+            data,
+        });
 
         revalidatePath(`/business/my-businesses/${updatedService.businessId}`);
 

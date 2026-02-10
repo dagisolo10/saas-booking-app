@@ -27,7 +27,7 @@ export default async function deleteService(serviceId: string) {
             },
         });
 
-        if (activeBookings) return { error: true, message: "Can not delete service with active bookings" };
+        if (activeBookings) return { error: true, message: "Cannot delete service with active bookings" };
 
         const service = await prisma.service.findFirst({
             where: {
@@ -45,6 +45,20 @@ export default async function deleteService(serviceId: string) {
 
         if (service.business.status === "CLOSED") return { error: true, message: "Cannot modify services of a closed business." };
 
+        if (service.thumbnail) {
+            try {
+                const decodedUrl = decodeURIComponent(service.thumbnail);
+                const parts = decodedUrl.split("/banners/");
+                const path = parts[parts.length - 1];
+
+                const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+
+                await supabase.storage.from("banners").remove([cleanPath]);
+            } catch (e) {
+                return { error: true, message: `Failed to delete service thumbnail:${e}` };
+            }
+        }
+
         await prisma.$transaction(async (trx) => {
             await trx.booking.deleteMany({
                 where: {
@@ -58,20 +72,6 @@ export default async function deleteService(serviceId: string) {
                 },
             });
         });
-
-        if (service.thumbnail) {
-            try {
-                const decodedUrl = decodeURIComponent(service.thumbnail);
-                const parts = decodedUrl.split("/banners/");
-                const path = parts[parts.length - 1];
-
-                const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-
-                await supabase.storage.from("services").remove([cleanPath]);
-            } catch (e) {
-                return { error: true, message: `Failed to delete service thumbnail:${e}` };
-            }
-        }
 
         revalidatePath(`/business/my-businesses/${service.businessId}`);
 
