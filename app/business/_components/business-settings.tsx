@@ -83,6 +83,8 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
         e.target.value = "";
     };
 
+    useEffect(() => () => newPreviews.forEach((url) => URL.revokeObjectURL(url)), [newPreviews]);
+
     const removeExistingImage = (url: string) => {
         setExistingImages((prev) => prev.filter((ext) => ext !== url));
         setImagesToRemoveFromBucket((prev) => {
@@ -107,54 +109,61 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
 
         const processUpdate = async () => {
             const finalBannerImages = [...existingImages];
+            const uploadedPaths: string[] = [];
 
-            for (const file of bannerFiles) {
-                const fileName = `business/${file.name}-${Date.now()}`;
-                const { error } = await supabase.storage.from("banners").upload(fileName, file);
+            try {
+                for (const file of bannerFiles) {
+                    const fileName = `business/${file.name}-${Date.now()}`;
+                    const { error } = await supabase.storage.from("banners").upload(fileName, file);
 
-                if (error) throw error.message;
+                    if (error) throw new Error(error.message);
+                    uploadedPaths.push(fileName);
 
-                const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
+                    const { data } = supabase.storage.from("banners").getPublicUrl(fileName);
+                    finalBannerImages.push(data.publicUrl);
+                }
 
-                finalBannerImages.push(data.publicUrl);
+                const data = {
+                    name: String(formData.get("name") || ""),
+                    phone: String(formData.get("phone") || ""),
+                    location: String(formData.get("location") || ""),
+                    description: String(formData.get("description") || ""),
+                    hours,
+                    timeZone,
+                    bannerImages: finalBannerImages,
+                    businessId: initialData.id,
+                };
+
+                const result = await updateBusiness(data);
+
+                if ("error" in result) throw new Error(result.message);
+
+                if (imagesToRemoveFromBucket.length > 0) {
+                    const paths = imagesToRemoveFromBucket
+                        .map((url) => {
+                            try {
+                                const decodedUrl = decodeURIComponent(url);
+                                const parts = decodedUrl.split("/banners/");
+                                const path = parts[parts.length - 1];
+
+                                return path.startsWith("/") ? path.substring(1) : path;
+                            } catch {
+                                return null;
+                            }
+                        })
+                        .filter(Boolean) as string[];
+
+                    const { error: storageError } = await supabase.storage.from("banners").remove(paths);
+
+                    if (storageError) throw new Error(storageError.message);
+                }
+
+                return result;
+            } catch (err) {
+                if (uploadedPaths.length > 0) await supabase.storage.from("banners").remove(uploadedPaths);
+
+                throw err;
             }
-
-            const data = {
-                name: String(formData.get("name") || ""),
-                phone: String(formData.get("phone") || ""),
-                location: String(formData.get("location") || ""),
-                description: String(formData.get("description") || ""),
-                hours,
-                timeZone,
-                bannerImages: finalBannerImages,
-                businessId: initialData.id,
-            };
-
-            const result = await updateBusiness(data);
-
-            if ("error" in result) throw new Error(result.message);
-
-            if (imagesToRemoveFromBucket.length > 0) {
-                const paths = imagesToRemoveFromBucket
-                    .map((url) => {
-                        try {
-                            const decodedUrl = decodeURIComponent(url);
-                            const parts = decodedUrl.split("/banners/");
-                            const path = parts[parts.length - 1];
-
-                            return path.startsWith("/") ? path.substring(1) : path;
-                        } catch {
-                            return null;
-                        }
-                    })
-                    .filter(Boolean) as string[];
-
-                const { error: storageError } = await supabase.storage.from("banners").remove(paths);
-
-                if (storageError) throw new Error(storageError.message);
-            }
-
-            return result;
         };
 
         await toast.promise(processUpdate(), {

@@ -192,6 +192,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
             {isAdding && resolvedBusinessId && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
             <DeleteConfirmation
                 showConfirm={showConfirm}
+                isDeleting={isDeleting}
                 onConfirm={() => {
                     if (targetService) handleDelete(targetService);
                     setTargetService(null);
@@ -236,9 +237,10 @@ interface DeleteConfirmationProps {
     showConfirm: boolean;
     setShowConfirm: Dispatch<SetStateAction<boolean>>;
     onConfirm: () => void;
+    isDeleting: boolean;
 }
 
-function DeleteConfirmation({ showConfirm, onConfirm, setShowConfirm }: DeleteConfirmationProps) {
+function DeleteConfirmation({ showConfirm, onConfirm, setShowConfirm, isDeleting }: DeleteConfirmationProps) {
     return (
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
             <AlertDialogContent size="sm">
@@ -247,9 +249,9 @@ function DeleteConfirmation({ showConfirm, onConfirm, setShowConfirm }: DeleteCo
                     <AlertDialogDescription>Are you sure you want to delete this service? This action cannot be undone and it will be removed from your business immediately.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onConfirm} variant={`destructive`}>
-                        Delete
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction disabled={isDeleting} onClick={onConfirm} variant={`destructive`}>
+                        {isDeleting ? "Deleting..." : "Delete"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
