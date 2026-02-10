@@ -247,20 +247,13 @@ interface TimeZoneProp {
 }
 
 function TimezoneComboBox({ timeZone, setTimeZone }: TimeZoneProp) {
-    const timezones = useMemo(
-        () =>
-            Intl.supportedValuesOf("timeZone").map((tz) => ({
-                label: tz.replace(/_/g, " "),
-                value: tz,
-            })),
-        [],
-    );
+    const timezones = useMemo(() => Intl.supportedValuesOf("timeZone").map((tz) => ({ label: tz.replace(/_/g, " "), value: tz })), []);
 
     return (
         <Combobox items={timezones} value={timeZone} onValueChange={(value) => value && setTimeZone(value as string)}>
             <div className="relative">
                 <Globe className="absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400" />
-                <ComboboxInput value={timeZone.replace(/_/g, " ")} onChange={(e) => setTimeZone(e.target.value)} placeholder="Search timezone..." className="h-10 rounded-xl pl-10" />
+                <ComboboxInput placeholder="Search timezone..." className="h-10 rounded-xl pl-10" />
             </div>
             <ComboboxContent>
                 <ComboboxEmpty>No timezone found.</ComboboxEmpty>

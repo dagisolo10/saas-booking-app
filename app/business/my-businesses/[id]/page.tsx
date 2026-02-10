@@ -2,12 +2,13 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Phone, Clock, Info, Globe } from "lucide-react";
+import { MapPin, Phone, Clock, Info, Globe, Settings } from "lucide-react";
 import { getMyBusinessById } from "../../_actions/get-my-business";
 import RatingStars from "@/components/rating-stars";
 import MyServiceList from "../../_components/my-services-list";
 import Link from "next/link";
 import getTimezoneOffset from "@/lib/helpers/timezone-converter";
+import { Button } from "@/components/ui/button";
 
 interface Service {
     id: string;
@@ -71,6 +72,14 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                             </Link>
                         </div>
                     </div>
+                </div>
+                <div className="absolute top-6 right-6">
+                    <Link href={`/business/my-businesses/${id}/settings`}>
+                        <Button variant={`secondary`} className="cursor-pointer rounded-full border-none bg-white/20 text-white backdrop-blur-md hover:bg-white/40">
+                            <Settings className="size-4" />
+                            Business Settings
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
