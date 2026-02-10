@@ -45,9 +45,6 @@ export default async function updateBusiness({ name, phone, location, descriptio
 
         if (!business) return { error: true, message: "Business not found or not owned by you" };
 
-        const existingImages = business.bannerImages || [];
-        const updatedImages = [...new Set([...existingImages, ...(bannerImages || [])])];
-
         const data: Partial<PartialData> = {};
         if (name !== undefined) data.name = name;
         if (hours !== undefined) data.hours = hours;
@@ -55,7 +52,7 @@ export default async function updateBusiness({ name, phone, location, descriptio
         if (location !== undefined) data.location = location;
         if (timeZone !== undefined) data.timeZone = timeZone;
         if (description !== undefined) data.description = description;
-        if (bannerImages.length !== 0) data.bannerImages = updatedImages;
+        data.bannerImages = bannerImages;
 
         const updatedBusiness = await prisma.business.update({
             where: {

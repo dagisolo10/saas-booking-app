@@ -39,6 +39,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
     const [showConfirm, setShowConfirm] = useState<boolean>(false);
 
     const [selectedService, setSelectedService] = useState<SelectedService>();
+    const [targetService, setTargetService] = useState<Service | null>(null);
     const resolvedBusinessId = businessId ?? services[0]?.businessId;
 
     const featuredServices = useMemo(() => [...services].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 5), [services]);
@@ -76,14 +77,23 @@ export default function MyServiceList({ services, businessId }: { services: Serv
     }
 
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (isClickScrolling.current) return;
-                const visibleEntry = entries.find((entry) => entry.isIntersecting);
-                if (visibleEntry) setActiveCategory(visibleEntry.target.id);
-            },
-            { threshold: 0.2, rootMargin: "-120px 0px -50% 0px" },
-        );
+        const observerOptions = {
+            root: null,
+            rootMargin: "-40% 0px -30% 0px",
+            threshold: 0,
+        };
+
+        const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+            if (isClickScrolling.current) return;
+
+            const intersecting = entries.filter((entry) => entry.isIntersecting);
+            if (intersecting.length > 0) {
+                const mostVisible = intersecting.reduce((prev, current) => (prev.intersectionRatio > current.intersectionRatio ? prev : current));
+                setActiveCategory(mostVisible.target.id);
+            }
+        };
+
+        const observer = new IntersectionObserver(handleIntersection, observerOptions);
 
         allTabs.forEach((tab) => {
             const el = document.getElementById(tab);
@@ -98,6 +108,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
         setActiveCategory(cat);
 
         const el = document.getElementById(cat);
+
         if (el) {
             const offset = 140;
             const elementPosition = el.getBoundingClientRect().top + window.scrollY;
@@ -129,7 +140,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                             if (displayServices.length === 0) return null;
 
                             return (
-                                <section key={tab} id={tab}>
+                                <section key={tab} id={tab} className="scroll-mt-40">
                                     <h2 className="mb-4 text-xl font-extrabold tracking-tight">{tab}</h2>
                                     <div className="grid gap-4">
                                         {displayServices.map((service) => (
@@ -151,19 +162,19 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                                                         >
                                                             Edit
                                                         </Button>
-                                                        <Button disabled={isDeleting} onClick={() => setShowConfirm(true)} variant="ghost" className="cursor-pointer rounded-full text-xs transition-all">
+                                                        <Button
+                                                            disabled={isDeleting}
+                                                            onClick={() => {
+                                                                setTargetService(service);
+                                                                setShowConfirm(true);
+                                                            }}
+                                                            variant="ghost"
+                                                            className="cursor-pointer rounded-full text-xs transition-all"
+                                                        >
                                                             Delete
                                                         </Button>
                                                     </div>
                                                 </CardContent>
-                                                <DeleteConfirmation
-                                                    showConfirm={showConfirm}
-                                                    onConfirm={() => {
-                                                        handleDelete(service);
-                                                        setShowConfirm(false);
-                                                    }}
-                                                    setShowConfirm={setShowConfirm}
-                                                />
                                             </Card>
                                         ))}
                                     </div>
@@ -179,6 +190,15 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                 </div>
             )}
             {isAdding && resolvedBusinessId && <ServiceDialog businessId={resolvedBusinessId} dialog={isAdding} setDialog={setIsAdding} />}
+            <DeleteConfirmation
+                showConfirm={showConfirm}
+                onConfirm={() => {
+                    if (targetService) handleDelete(targetService);
+                    setTargetService(null);
+                    setShowConfirm(false);
+                }}
+                setShowConfirm={setShowConfirm}
+            />
         </div>
     );
 }
@@ -227,7 +247,7 @@ function DeleteConfirmation({ showConfirm, onConfirm, setShowConfirm }: DeleteCo
                     <AlertDialogDescription>Are you sure you want to delete this service? This action cannot be undone and it will be removed from your business immediately.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} variant={`destructive`}>
                         Delete
                     </AlertDialogAction>
