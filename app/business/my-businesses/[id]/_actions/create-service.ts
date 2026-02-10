@@ -24,6 +24,12 @@ export default async function createService({ name, duration, price, businessId,
 
         if (!user) return { error: true, message: "Unauthorized" };
 
+        const business = await prisma.business.findUnique({ where: { id: businessId, ownerId: user.id } });
+
+        if (!business) return { error: true, message: "Business not found or not owned by you" };
+
+        if (business.status !== "ACTIVE") return { error: true, message: "You must activate your business to add new services." };
+
         const existingService = await prisma.service.findFirst({
             where: {
                 businessId,

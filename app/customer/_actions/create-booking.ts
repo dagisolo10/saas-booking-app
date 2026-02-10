@@ -43,6 +43,8 @@ export default async function createBooking({ businessId, serviceId, date }: Boo
 
         if (!business) return { error: true, message: "The selected business could not be found." };
 
+        if (business.status === "CLOSED") return { error: true, message: "This business is currently not accepting bookings." };
+
         const service = await prisma.service.findUnique({
             where: {
                 id: serviceId,

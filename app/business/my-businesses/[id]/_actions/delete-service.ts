@@ -6,10 +6,10 @@ import { revalidatePath } from "next/cache";
 
 export default async function deleteService(serviceId: string) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
         const {
             data: { session },
-        } = await (await supabase).auth.getSession();
+        } = await supabase.auth.getSession();
 
         const user = session?.user;
 
@@ -17,12 +17,17 @@ export default async function deleteService(serviceId: string) {
 
         const activeBookings = await prisma.booking.findFirst({
             where: {
+                service: {
+                    business: {
+                        ownerId: user.id,
+                    },
+                },
                 serviceId,
                 status: "CONFIRMED",
             },
         });
 
-        if (activeBookings) return { error: true, message: "Cannot delete service with active bookings" };
+        if (activeBookings) return { error: true, message: "Can not delete service with active bookings" };
 
         const service = await prisma.service.findFirst({
             where: {
@@ -31,9 +36,14 @@ export default async function deleteService(serviceId: string) {
                     ownerId: user.id,
                 },
             },
+            include: {
+                business: true,
+            },
         });
 
         if (!service) return { error: true, message: "Service not found or you don’t have permission to delete it." };
+
+        if (service.business.status === "CLOSED") return { error: true, message: "Cannot modify services of a closed business." };
 
         await prisma.$transaction(async (trx) => {
             await trx.booking.deleteMany({
@@ -49,7 +59,21 @@ export default async function deleteService(serviceId: string) {
             });
         });
 
-        revalidatePath(`/business/my-businesses/${service.businessId}`)
+        if (service.thumbnail) {
+            try {
+                const decodedUrl = decodeURIComponent(service.thumbnail);
+                const parts = decodedUrl.split("/banners/");
+                const path = parts[parts.length - 1];
+
+                const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+
+                await supabase.storage.from("services").remove([cleanPath]);
+            } catch (e) {
+                return { error: true, message: `Failed to delete service thumbnail:${e}` };
+            }
+        }
+
+        revalidatePath(`/business/my-businesses/${service.businessId}`);
 
         return { success: true };
     } catch (error) {

@@ -45,6 +45,8 @@ export default async function updateBusiness({ name, phone, location, descriptio
 
         if (!business) return { error: true, message: "Business not found or not owned by you" };
 
+        if (business.status === "CLOSED") return { error: true, message: "Closed businesses can not be edited." };
+
         const data: Partial<PartialData> = {};
         if (name !== undefined) data.name = name;
         if (hours !== undefined) data.hours = hours;

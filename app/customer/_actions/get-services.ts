@@ -3,7 +3,13 @@ import prisma from "@/lib/config/prisma";
 
 export async function getAllServices() {
     try {
-        return await prisma.service.findMany({});
+        return await prisma.service.findMany({
+            where: {
+                business: {
+                    status: "ACTIVE",
+                },
+            },
+        });
     } catch (error) {
         console.log("Error in getAllServices:", error);
         return { error: true, message: "Something went wrong fetching all services" };
@@ -13,6 +19,11 @@ export async function getAllServices() {
 export async function getTopServices() {
     try {
         return await prisma.service.findMany({
+            where: {
+                business: {
+                    status: "ACTIVE",
+                },
+            },
             orderBy: {
                 rating: "desc",
             },
