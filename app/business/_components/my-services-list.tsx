@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { motion } from "framer-motion";
 import { ServiceDialog } from "./service-dialog";
-import { Layers, Plus } from "lucide-react";
+import { Ban, Layers, Plus } from "lucide-react";
 import deleteService from "../my-businesses/[id]/_actions/delete-service";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { BusinessStatus } from "@prisma/client";
 
 interface Service {
     id: string;
@@ -30,7 +31,7 @@ interface SelectedService {
     thumbnail: string;
 }
 
-export default function MyServiceList({ services, businessId }: { services: Service[]; businessId?: string }) {
+export default function MyServiceList({ services, businessId, status }: { services: Service[]; businessId?: string; status: BusinessStatus }) {
     const [activeCategory, setActiveCategory] = useState("Featured");
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
@@ -117,7 +118,7 @@ export default function MyServiceList({ services, businessId }: { services: Serv
         setTimeout(() => (isClickScrolling.current = false), 800);
     };
 
-    return (
+    return status !== "CLOSED" ? (
         <div className="order-2 lg:order-1 lg:col-span-2">
             <div className="flex items-center justify-between">
                 <div className="mb-8 flex items-center gap-3">
@@ -200,6 +201,39 @@ export default function MyServiceList({ services, businessId }: { services: Serv
                 }}
                 setShowConfirm={setShowConfirm}
             />
+        </div>
+    ) : (
+        <div className="order-2 flex min-h-100 items-center justify-center lg:order-1 lg:col-span-2">
+            <div className="max-w-md text-center">
+                <div className="mb-4 flex justify-center">
+                    <div className="bg-destructive/10 rounded-full p-6">
+                        <Ban className="text-destructive size-12 opacity-50" />
+                    </div>
+                </div>
+
+                <h2 className="mb-2 text-3xl font-bold tracking-tight">Business Closed</h2>
+                <p className="text-muted-foreground mb-8">This business was permanently closed. In accordance with your request, all services, media, and active booking slots have been purged from our systems.</p>
+
+                <div className="bg-muted/50 rounded-2xl p-6 text-left">
+                    <h3 className="text-muted-foreground mb-3 text-sm font-bold tracking-widest uppercase">Post-Closure Summary</h3>
+                    <ul className="space-y-3 text-sm">
+                        <li className="text-muted-foreground flex items-center gap-2">
+                            <span className="bg-destructive size-1.5 rounded-full" />
+                            All service listings deleted
+                        </li>
+                        <li className="text-muted-foreground flex items-center gap-2">
+                            <span className="bg-destructive size-1.5 rounded-full" />
+                            Banner and thumbnail storage cleared
+                        </li>
+                        <li className="text-muted-foreground flex items-center gap-2">
+                            <span className="bg-destructive size-1.5 rounded-full" />
+                            Public URL deactivated
+                        </li>
+                    </ul>
+                </div>
+
+                <p className="text-muted-foreground mt-8 text-xs italic">The business name and basic registration info remain in your dashboard for historical record.</p>
+            </div>
         </div>
     );
 }
