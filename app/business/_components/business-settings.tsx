@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FieldGroup, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Globe, Plus, Loader2, Save, X, Clock, Info, LayoutDashboard } from "lucide-react";
+import { Globe, Plus, Loader2, Save, Clock, Info, LayoutDashboard } from "lucide-react";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
@@ -19,6 +19,9 @@ import { JsonValue } from "@prisma/client/runtime/client";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import toggleBusiness from "../my-businesses/[id]/_actions/toggle-business";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import closeBusiness from "../my-businesses/[id]/_actions/close-business";
 
 type BusinessHours = {
     open: string;
@@ -288,8 +291,8 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
                                             {existingImages.map((url, i) => (
                                                 <div key={`existing-${i}`} className="relative aspect-video overflow-hidden rounded-xl border">
                                                     <Image src={url} alt="Current" fill className="object-cover" />
-                                                    <button type="button" onClick={() => removeExistingImage(url)} className="bg-destructive absolute top-1 right-1 rounded-full p-1 text-white shadow-lg">
-                                                        <X size={12} />
+                                                    <button type="button" onClick={() => removeExistingImage(url)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-black">
+                                                        <Plus className="size-3 rotate-45" />
                                                     </button>
                                                 </div>
                                             ))}
@@ -330,27 +333,154 @@ export default function UpdateBusinessForm({ initialData }: { initialData: Busin
             </div>
 
             {/* Danger Zone */}
-            <div className="border border-red-200 bg-red-50/50 p-6">
-                <h3 className="text-sm font-bold tracking-widest text-red-900 uppercase">Danger Zone</h3>
-                <div className="mt-4 flex items-center justify-between">
-                    <div>
-                        <p className="font-bold text-red-900">Close Business Temporarily</p>
-                        <p className="text-xs text-red-700">Hide your shop from customers. You can re-open anytime.</p>
-                    </div>
-                    <Button variant="outline" className="border-red-200 text-red-900 hover:bg-red-100">
-                        Pause Business
-                    </Button>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between border-t border-red-100 pt-6">
-                    <div>
-                        <p className="font-bold text-red-900">Delete Permanently</p>
-                        <p className="text-xs text-red-700">This will delete all services, images, and history. This cannot be undone.</p>
-                    </div>
-                    <Button variant="destructive">Delete Business</Button>
-                </div>
-            </div>
+            <DangerZone business={initialData} />
         </main>
+    );
+}
+
+interface DangerZoneProp {
+    business: Business;
+}
+
+type Method = "pause" | "activate" | "close" | null;
+
+function DangerZone({ business }: DangerZoneProp) {
+    const [loading, setLoading] = useState<boolean>(false);
+    const [showConfirm, setShowConfirm] = useState<boolean>(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const [method, setMethod] = useState<Method>(null);
+
+    const router = useRouter();
+
+    async function handleToggle() {
+        setLoading(true);
+        await toast.promise(toggleBusiness({ businessId: business.id ?? "" }), {
+            loading: `${business.status === "ACTIVE" ? "Pausing Business..." : "Activating Business..."}`,
+            success: (data) => {
+                if ("error" in data) throw new Error(data.message);
+
+                router.push(`/business/my-businesses`);
+                return `${data.status === "ACTIVE" ? "Business Activated Successfully" : "Business Paused Successfully"}`;
+            },
+            error: (err) => err.message || `Failed to ${business.status === "ACTIVE" ? "pause" : "activate"} business.`,
+            finally: () => setLoading(false),
+        });
+    }
+
+    async function handleClosing() {
+        setIsClosing(true);
+        await toast.promise(closeBusiness({ businessId: business.id ?? "" }), {
+            loading: "Closing Business Permanently...",
+            success: (data) => {
+                if ("error" in data) throw new Error(data.message);
+
+                router.push(`/business/my-businesses`);
+                return "Business Closed Permanently.";
+            },
+            error: (err) => err.message || "Failed to close business",
+            finally: () => setIsClosing(false),
+        });
+    }
+
+    return (
+        <div className="border border-red-200 bg-red-50/50 p-6">
+            <h3 className="text-sm font-bold tracking-widest text-red-900 uppercase">Danger Zone</h3>
+            <div className="mt-4 flex items-center justify-between">
+                <div>
+                    <p className="font-bold text-red-900">Close Business Temporarily</p>
+                    <p className="text-xs text-red-700">Hide your shop from customers. You can re-open anytime.</p>
+                </div>
+                {business.status !== "CLOSED" && (
+                    <Button
+                        onClick={() => {
+                            setShowConfirm(true);
+                            setMethod(business.status === "ACTIVE" ? "pause" : "activate");
+                        }}
+                        disabled={loading || isClosing}
+                        variant="outline"
+                        className="border-red-200 text-red-900 hover:bg-red-100"
+                    >
+                        {business.status === "ACTIVE" ? "Pause Business" : "Activate Business"}
+                    </Button>
+                )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-between border-t border-red-100 pt-6">
+                <div>
+                    <p className="font-bold text-red-900">Delete Permanently</p>
+                    <p className="text-xs text-red-700">This will delete all services, images, and history. This cannot be undone.</p>
+                </div>
+                <Button
+                    onClick={() => {
+                        setShowConfirm(true);
+                        setMethod("close");
+                    }}
+                    variant="destructive"
+                    disabled={loading || isClosing}
+                >
+                    {isClosing ? "Closing Business..." : "Close Business"}
+                </Button>
+            </div>
+            <Confirmation
+                method={method}
+                showConfirm={showConfirm}
+                isClosing={isClosing}
+                onConfirm={() => {
+                    if (method === "close") handleClosing();
+                    else handleToggle();
+                    setShowConfirm(false);
+                }}
+                setShowConfirm={setShowConfirm}
+            />
+        </div>
+    );
+}
+
+interface ConfirmationProps {
+    showConfirm: boolean;
+    setShowConfirm: Dispatch<SetStateAction<boolean>>;
+    onConfirm: () => void;
+    isClosing: boolean;
+    method: Method;
+}
+
+function Confirmation({ showConfirm, onConfirm, setShowConfirm, isClosing, method }: ConfirmationProps) {
+    const texts = {
+        Activation: {
+            title: "Resume Business Operations?",
+            desc: "This will make your business and services visible to customers again. You will be able to receive new bookings.",
+            confirm: "Activate Business",
+            cancel: "Keep Paused",
+        },
+        Pausing: {
+            title: "Pause Business Temporarily?",
+            desc: "This will hide your business and services from the public. You won’t receive new bookings, but your existing confirmed bookings remain active.", // TODO
+            confirm: "Pause Business",
+            cancel: "Go Back",
+        },
+        Closing: {
+            title: "Permanently Close Business?",
+            desc: "This action is final. All services and images will be deleted, and pending bookings will be cancelled. This cannot be undone.",
+            confirm: "Close Business Permanently",
+            cancel: "Keep Business Open",
+        },
+    };
+
+    return (
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+            <AlertDialogContent size="default">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{method === "activate" ? texts.Activation.title : method === "pause" ? texts.Pausing.title : texts.Closing.title}</AlertDialogTitle>
+                    <AlertDialogDescription>{method === "activate" ? texts.Activation.desc : method === "pause" ? texts.Pausing.desc : texts.Closing.desc}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isClosing}>{method === "activate" ? texts.Activation.cancel : method === "pause" ? texts.Pausing.cancel : texts.Closing.cancel}</AlertDialogCancel>
+                    <AlertDialogAction disabled={isClosing} onClick={onConfirm} variant={`destructive`}>
+                        {method === "activate" ? texts.Activation.confirm : method === "pause" ? texts.Pausing.confirm : texts.Closing.confirm}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
 

@@ -41,7 +41,20 @@ export default async function closeBusiness({ businessId }: { businessId: string
             .map((s) => {
                 try {
                     const decodedUrl = decodeURIComponent(s.thumbnail!);
-                    const parts = decodedUrl.split("/thumbnails/");
+                    const parts = decodedUrl.split("/banners/");
+                    const path = parts[parts.length - 1];
+                    return path.startsWith("/") ? path.substring(1) : path;
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean) as string[];
+       
+            const bannerPaths = business.bannerImages
+            .map((url) => {
+                try {
+                    const decodedUrl = decodeURIComponent(url!);
+                    const parts = decodedUrl.split("/banners/");
                     const path = parts[parts.length - 1];
                     return path.startsWith("/") ? path.substring(1) : path;
                 } catch {
@@ -69,6 +82,12 @@ export default async function closeBusiness({ businessId }: { businessId: string
 
         if (thumbnailPaths.length > 0) {
             const { error: storageError } = await supabase.storage.from("banners").remove(thumbnailPaths);
+
+            if (storageError) return { error: true, message: storageError.message };
+        }
+
+        if (bannerPaths.length > 0) {
+            const { error: storageError } = await supabase.storage.from("banners").remove(bannerPaths);
 
             if (storageError) return { error: true, message: storageError.message };
         }

@@ -50,7 +50,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
         <main className="min-h-screen p-6">
             {/* HERO SECTION */}
             <div className="relative min-h-[40vh] w-full overflow-hidden rounded-3xl bg-zinc-900">
-                <Image src={business.bannerImages[0] || "/unsplash.jpg"} alt={business.name} fill className="object-cover object-center brightness-50" priority />
+                {business.bannerImages[0] && <Image src={business.bannerImages[0]} alt={business.name} fill className="object-cover object-center brightness-50" priority />}
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
 
                 <div className="absolute inset-0 flex items-center justify-center p-6 text-zinc-50 md:p-16">
@@ -73,14 +73,16 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                         </div>
                     </div>
                 </div>
-                <div className="absolute top-6 right-6">
-                    <Link href={`/business/my-businesses/${id}/settings`}>
-                        <Button variant={`secondary`} className="cursor-pointer rounded-full border-none bg-white/20 text-white backdrop-blur-md hover:bg-white/40">
-                            <Settings className="size-4" />
-                            Business Settings
-                        </Button>
-                    </Link>
-                </div>
+                {business.status !== "CLOSED" && (
+                    <div className="absolute top-6 right-6">
+                        <Link href={`/business/my-businesses/${id}/settings`}>
+                            <Button variant={`secondary`} className="cursor-pointer rounded-full border-none bg-white/20 text-white backdrop-blur-md hover:bg-white/40">
+                                <Settings className="size-4" />
+                                Business Settings
+                            </Button>
+                        </Link>
+                    </div>
+                )}
             </div>
 
             <div className="container px-0 sm:px-4">
@@ -98,7 +100,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 <div className="py-8 md:py-12">
                     <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-12">
                         {/* LEFT: Services Grid */}
-                        <MyServiceList services={services} businessId={business.id ?? ""} />
+                        <MyServiceList status={business.status} services={services} businessId={business.id ?? ""} />
 
                         {/* RIGHT: Sidebar Info */}
                         <aside className="top-20 order-1 sm:sticky lg:order-2">
@@ -130,6 +132,7 @@ function BusinessHours({ hours, timezone }: { hours: WeeklySchedule; timezone: s
         <Card className="border-none shadow-sm">
             <CardContent className="space-y-4 p-6">
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+                    {/* {business.status === "CLOSED" && <h1></h1>} */}
                     <h3 className="flex items-center gap-2 text-xl font-bold">
                         <Clock size={20} /> Business Hours
                     </h3>

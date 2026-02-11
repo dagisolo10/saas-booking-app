@@ -39,7 +39,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
         <main className="min-h-screen p-6">
             {/* HERO SECTION */}
             <div className="relative min-h-[40vh] w-full overflow-hidden rounded-3xl bg-zinc-900">
-                <Image src={business.bannerImages[0] || "/unsplash.jpg"} alt={business.name} fill className="object-cover object-center brightness-50" priority />
+                {business.bannerImages[0] && <Image src={business.bannerImages[0]} alt={business.name} fill className="object-cover object-center brightness-50" priority />}
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
 
                 <div className="absolute inset-0 flex items-center justify-center p-6 text-zinc-50 md:p-16">
