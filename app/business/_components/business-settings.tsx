@@ -390,17 +390,19 @@ function DangerZone({ business }: DangerZoneProp) {
                     <p className="font-bold text-red-900">Close Business Temporarily</p>
                     <p className="text-xs text-red-700">Hide your shop from customers. You can re-open anytime.</p>
                 </div>
-                <Button
-                    onClick={() => {
-                        setShowConfirm(true);
-                        setMethod(business.status !== "CLOSED" && business.status === "ACTIVE" ? "pause" : business.status === "PAUSED" ? "activate" : null);
-                    }}
-                    disabled={loading}
-                    variant="outline"
-                    className="border-red-200 text-red-900 hover:bg-red-100"
-                >
-                    {business.status === "ACTIVE" ? "Pause Business" : business.status === "PAUSED" && "Activate Business"}
-                </Button>
+                {business.status !== "CLOSED" && (
+                    <Button
+                        onClick={() => {
+                            setShowConfirm(true);
+                            setMethod(business.status === "ACTIVE" ? "pause" : "activate");
+                        }}
+                        disabled={loading || isClosing}
+                        variant="outline"
+                        className="border-red-200 text-red-900 hover:bg-red-100"
+                    >
+                        {business.status === "ACTIVE" ? "Pause Business" : "Activate Business"}
+                    </Button>
+                )}
             </div>
 
             <div className="mt-6 flex items-center justify-between border-t border-red-100 pt-6">
@@ -414,7 +416,7 @@ function DangerZone({ business }: DangerZoneProp) {
                         setMethod("close");
                     }}
                     variant="destructive"
-                    disabled={loading}
+                    disabled={loading || isClosing}
                 >
                     {isClosing ? "Closing Business..." : "Close Business"}
                 </Button>

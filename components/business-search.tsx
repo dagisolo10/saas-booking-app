@@ -192,8 +192,14 @@ function TopBusinessesDropdown({ businesses, linkPath }: { businesses: Business[
                 {businesses.map((business) => (
                     <Link key={business.id} href={`${linkPath}/${business.id}`}>
                         <DropdownMenuItem className="flex cursor-pointer items-center gap-3 rounded-xl p-2 focus:bg-zinc-50">
-                            <div className="relative size-10 overflow-hidden rounded-lg bg-zinc-100">
-                                <Image src={business.bannerImages[0] ?? "/unsplash.jpg"} alt="" fill className="object-cover" />
+                            <div className="relative size-10 overflow-hidden rounded-lg bg-zinc-600">
+                                {business.bannerImages[0] ? (
+                                    <Image src={business.bannerImages[0]} alt="" fill className="object-cover" />
+                                ) : (
+                                    <div className="grid h-full place-items-center">
+                                        <Store className="size-4" />
+                                    </div>
+                                )}
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-bold text-zinc-800">{business.name}</span>
